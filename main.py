@@ -449,7 +449,6 @@ class MainWindow(QMainWindow):
         # Quitamos los datos de la tabla surface
         self.table_surf.setRowCount(0)
 
-
     def __quit_table_body(self):
         num = self.table_body.rowCount()
         self.table_body.removeRow(num+1)
