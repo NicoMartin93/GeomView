@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
     def view(self):
         engine = QQmlApplicationEngine()
         QSurfaceFormat.setDefaultFormat(QQuick3D.idealSurfaceFormat(4))
-        pathfolder = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Main_Code\Prueba'
+        pathfolder = './GeomView/'
         qml_file = os.path.join(pathfolder, 'main.qml')
         engine.load(QUrl.fromLocalFile(qml_file))
         self.engine = engine
@@ -394,14 +394,21 @@ class MainWindow(QMainWindow):
 
         # Agregamos las superficies a la subtabla
 
-        num = self.table_surface.rowCount()
-        for n in range(num):
-            self.table_surf.setRowCount(n+1)
-            self.table_surf.setColumnCount(2)
-            self.table_surf.setHorizontalHeaderLabels(self.column_names_surf)
-            self.table_surf.setItem(n, 0, QTableWidgetItem(f"S{n}"))
-            self.table_surf.setItem(n, 1, QTableWidgetItem("1"))
+        if self.table_surface.rowCount() != 0:
 
+            num = self.table_surface.rowCount()
+            for n in range(num):
+                self.table_surf.setRowCount(n+1)
+                self.table_surf.setColumnCount(2)
+                self.table_surf.setHorizontalHeaderLabels(self.column_names_surf)
+                self.table_surf.setItem(n, 0, QTableWidgetItem(f"S{n}"))
+                self.table_surf.setItem(n, 1, QTableWidgetItem("1"))
+
+        elif self.table_surface.rowCount() == 0:
+            msgBox = QMessageBox()
+            msgBox.setText("No hay superficies previamente agregadas.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
         # Quitamos los datos de la tabla surface
         self.table_surface.setRowCount(0)
 
@@ -434,11 +441,14 @@ class MainWindow(QMainWindow):
             self.table_body.setItem(num, 3, QTableWidgetItem(f"{comment}"))
 
         elif num == 0:
-            errorMSE = QErrorMessage()
-            errorMSE.showMessage("No hay ninguna superficie creada.")
+            msgBox = QMessageBox()
+            msgBox.setText("No hay superficies previamente agregadas.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
 
         # Quitamos los datos de la tabla surface
         self.table_surf.setRowCount(0)
+
 
     def __quit_table_body(self):
         num = self.table_body.rowCount()
