@@ -225,37 +225,23 @@ ApplicationWindow {
                     scale: Qt.vector3d(2, 0.2, 1)
                     materials: [ DefaultMaterial {
                             diffuseColor: "red"
+                            indexOfRefraction: 1.0
+                            opacity: 0.1
                         }
                     ]
                 }
 
                 Model {
-                    position: Qt.vector3d(0, 150, 0)
-                    source: "#Sphere"
+                    position: Qt.vector3d(0, -200, 0)
+                    source: "#Cylinder"
+                    scale: Qt.vector3d(1.5, 0.2, 1)
 
                     materials: [ DefaultMaterial {
                             diffuseColor: "blue"
                         }
                     ]
-
-                    //! [animation]
-                    SequentialAnimation on y {
-                        loops: Animation.Infinite
-                        NumberAnimation {
-                            duration: 3000
-                            to: -150
-                            from: 150
-                            easing.type:Easing.InQuad
-                        }
-                        NumberAnimation {
-                            duration: 3000
-                            to: 150
-                            from: -150
-                            easing.type:Easing.OutQuad
-                        }
-                    }
-                    //! [animation]
                 }
+
                 //! [objects]
             }
           }
