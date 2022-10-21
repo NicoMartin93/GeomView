@@ -13,6 +13,9 @@ from PySide6.QtQuick3D import QQuick3D
 from PySide6.QtQuick import QQuickView, QQuickWindow, QSGRendererInterface
 from PySide6.QtQuickWidgets import QQuickWidget
 
+from GeomView.main_geometry import GeometryDefinition
+
+import plotly.graph_objects as go
 # ----------------------------------------------------------------
 
 def class_name(o):
@@ -132,9 +135,6 @@ class MainWindow(QMainWindow):
         if not engine.rootObjects():
             sys.exit(-1)
 
-    def input(self):
-        print('Continuara...')
-
     # ============= SURFACE-BODY CONFIGURATION ==============
 
     def __SurfaceLayout_Config(self):
@@ -157,37 +157,37 @@ class MainWindow(QMainWindow):
 
         # # Posición de la superficie
         # X
-        self.xpos = QDoubleSpinBox()
-        self.xpos.setPrefix("xshift: ")
-        self.xpos.setValue(10)
-        init_widget(self.xpos, "x-label")
+        self._xpos = QDoubleSpinBox()
+        self._xpos.setPrefix("xshift: ")
+        self._xpos.setValue(10)
+        init_widget(self._xpos, "x-label")
         # Y
-        self.ypos = QDoubleSpinBox()
-        self.ypos.setPrefix("yshift: ")
-        self.ypos.setValue(10)
-        init_widget(self.ypos, "y-label")
+        self._ypos = QDoubleSpinBox()
+        self._ypos.setPrefix("yshift: ")
+        self._ypos.setValue(10)
+        init_widget(self._ypos, "y-label")
         # Z
-        self.zpos = QDoubleSpinBox()
-        self.zpos.setPrefix("zshift: ")
-        self.zpos.setValue(10)
-        init_widget(self.zpos, "z-label")
+        self._zpos = QDoubleSpinBox()
+        self._zpos.setPrefix("zshift: ")
+        self._zpos.setValue(10)
+        init_widget(self._zpos, "z-label")
 
         # # Rotation
         # Omega
-        self.xrot = QDoubleSpinBox()
-        self.xrot.setPrefix("Omega: ")
-        self.xrot.setValue(0)
-        init_widget(self.xrot, "omega-label")
+        self._xrot = QDoubleSpinBox()
+        self._xrot.setPrefix("Omega: ")
+        self._xrot.setValue(0)
+        init_widget(self._xrot, "omega-label")
         # Theta
-        self.yrot = QDoubleSpinBox()
-        self.yrot.setPrefix("Theta: ")
-        self.yrot.setValue(0)
-        init_widget(self.yrot, "theta-label")
+        self._yrot = QDoubleSpinBox()
+        self._yrot.setPrefix("Theta: ")
+        self._yrot.setValue(0)
+        init_widget(self._yrot, "theta-label")
         # Phi
-        self.zrot = QDoubleSpinBox()
-        self.zrot.setPrefix("Phi: ")
-        self.zrot.setValue(0)
-        init_widget(self.zrot, "phi-label")
+        self._zrot = QDoubleSpinBox()
+        self._zrot.setPrefix("Phi: ")
+        self._zrot.setValue(0)
+        init_widget(self._zrot, "phi-label")
 
         # # Lista de opciones de medidas de angulo
         self._style_angle = QComboBox()
@@ -200,20 +200,20 @@ class MainWindow(QMainWindow):
 
         # # Scale
         # X
-        self.xsca = QDoubleSpinBox()
-        self.xsca.setPrefix("xscale: ")
-        self.xsca.setValue(1)
-        init_widget(self.xsca, "xscale-label")
+        self._xsca = QDoubleSpinBox()
+        self._xsca.setPrefix("xscale: ")
+        self._xsca.setValue(1)
+        init_widget(self._xsca, "xscale-label")
         # Y
-        self.ysca = QDoubleSpinBox()
-        self.ysca.setPrefix("yscale: ")
-        self.ysca.setValue(1)
-        init_widget(self.ysca, "yscale-label")
+        self._ysca = QDoubleSpinBox()
+        self._ysca.setPrefix("yscale: ")
+        self._ysca.setValue(1)
+        init_widget(self._ysca, "yscale-label")
         # Z
-        self.zsca = QDoubleSpinBox()
-        self.zsca.setPrefix("zscale: ")
-        self.zsca.setValue(1)
-        init_widget(self.zsca, "zscale-label")
+        self._zsca = QDoubleSpinBox()
+        self._zsca.setPrefix("zscale: ")
+        self._zsca.setValue(1)
+        init_widget(self._zsca, "zscale-label")
 
         # # Botones de Agregar o quitar superficie
         self.button1 = QPushButton("Agregar")
@@ -230,18 +230,18 @@ class MainWindow(QMainWindow):
         self.llayout.addWidget(QLabel("Surfaces:"))
         self.llayout.addWidget(self._style_surfaces)
         self.llayout.addWidget(QLabel("Position:"))
-        self.llayout.addWidget(self.xpos)
-        self.llayout.addWidget(self.ypos)
-        self.llayout.addWidget(self.zpos)
+        self.llayout.addWidget(self._xpos)
+        self.llayout.addWidget(self._ypos)
+        self.llayout.addWidget(self._zpos)
         self.llayout.addWidget(QLabel("Rotation:"))
         self.llayout.addWidget(self._style_angle)
-        self.llayout.addWidget(self.xrot)
-        self.llayout.addWidget(self.yrot)
-        self.llayout.addWidget(self.zrot)
+        self.llayout.addWidget(self._xrot)
+        self.llayout.addWidget(self._yrot)
+        self.llayout.addWidget(self._zrot)
         self.llayout.addWidget(QLabel("Scale:"))
-        self.llayout.addWidget(self.xsca)
-        self.llayout.addWidget(self.ysca)
-        self.llayout.addWidget(self.zsca)
+        self.llayout.addWidget(self._xsca)
+        self.llayout.addWidget(self._ysca)
+        self.llayout.addWidget(self._zsca)
         self.llayout.addWidget(self.button1)
         self.llayout.addWidget(self.button2)
 
@@ -290,6 +290,7 @@ class MainWindow(QMainWindow):
         # (1) Creamos los widgets
 
         self.count_body = 0
+        self.BodyList = []
 
         # # Lista de opciones de superficies
         self._style_body = QComboBox()
@@ -397,17 +398,17 @@ class MainWindow(QMainWindow):
     def __add_table_surface(self):
 
         """ Update the plot with the current input values """
-        xpos = self.xpos.value()
-        ypos = self.ypos.value()
-        zpos = self.zpos.value()
+        xpos = self._xpos.value()
+        ypos = self._ypos.value()
+        zpos = self._zpos.value()
 
-        xrot = self.xrot.value()
-        yrot = self.yrot.value()
-        zrot = self.zrot.value()
+        xrot = self._xrot.value()
+        yrot = self._yrot.value()
+        zrot = self._zrot.value()
 
-        xsca = self.xsca.value()
-        ysca = self.ysca.value()
-        zsca = self.zsca.value()
+        xsca = self._xsca.value()
+        ysca = self._ysca.value()
+        zsca = self._zsca.value()
 
         surface = str(self._style_surfaces.currentText())
 
@@ -437,24 +438,39 @@ class MainWindow(QMainWindow):
 
         """ Update the plot with the current input values """
 
-        # Agregamos las superficies a la subtabla
-
         if self.table_surface.rowCount() != 0:
 
+            self.SurfacesOfBody = {}
             num = self.table_surface.rowCount()
             for n in range(num):
-                IDvalue = self.table_surface.item(n, 0).text()
+
+                # Extraemos la información de la superficie
+                Id_Surface = self.table_surface.item(n, 0).text()
+                Ty_Surface = self.table_surface.item(n, 1).text()
+                Ps_Surface = self.table_surface.item(n, 2)
+                Rt_Surface = self.table_surface.item(n, 3)
+                Sc_Surface = self.table_surface.item(n, 4)
+
+                self.SurfacesOfBody['ID'] = Id_Surface
+                self.SurfacesOfBody['Type'] = Ty_Surface
+                self.SurfacesOfBody['Position'] = Ps_Surface
+                self.SurfacesOfBody['Rotation'] = Rt_Surface
+                self.SurfacesOfBody['Scale'] = Sc_Surface
+
+                # Agregamos las superficies a la subtabla
                 self.table_surf.setRowCount(n+1)
                 self.table_surf.setColumnCount(2)
                 self.table_surf.setHorizontalHeaderLabels(self.column_names_surf)
-                self.table_surf.setItem(n, 0, QTableWidgetItem(f"{IDvalue}"))
+                self.table_surf.setItem(n, 0, QTableWidgetItem(f"{Id_Surface}"))
                 self.table_surf.setItem(n, 1, QTableWidgetItem("1"))
+
 
         elif self.table_surface.rowCount() == 0:
             msgBox = QMessageBox()
             msgBox.setText("No hay superficies previamente agregadas.")
             msgBox.setStandardButtons(QMessageBox.Cancel)
             ret = msgBox.exec()
+
         # Quitamos los datos de la tabla surface
         self.table_surface.setRowCount(0)
 
@@ -467,30 +483,45 @@ class MainWindow(QMainWindow):
         num = self.table_surf.rowCount()
 
         if num != 0:
-            body = str(self._style_body.currentText())
-            material = str(self._style_material.currentText())
+
+            self.Body = {}
+
+            # Extraemos la información del Body
+            Id_Body = f"B{self.count_body}"
+            Ty_Body = str(self._style_body.currentText())
+            Mt_Body = str(self._style_material.currentText())
+            Cm_Body = self.body_comment.toPlainText()
 
             num = self.table_surf.rowCount()
-            table_values = []
+            Tb_Body = []
             for n in range(num):
                 item = self.table_surf.itemAt(n,1)
-                table_values.append(item.text())
-            print(table_values)
+                Tb_Body.append(item.text())
 
-            comment = self.body_comment.toPlainText()
-
+            # Lo agregamos a la tabla de Bodys
             num = self.table_body.rowCount()
             self.table_body.setRowCount(num+1)
             self.table_body.setColumnCount(5)
             self.table_body.setHorizontalHeaderLabels(self.column_names_body)
 
-            self.table_body.setItem(num, 0, QTableWidgetItem(f"B{self.count_body}"))
-            self.table_body.setItem(num, 1, QTableWidgetItem(f"{body}"))
-            self.table_body.setItem(num, 2, QTableWidgetItem(f"{material}"))
-            self.table_body.setItem(num, 3, QTableWidgetItem(f"{table_values}"))
-            self.table_body.setItem(num, 4, QTableWidgetItem(f"{comment}"))
+            self.table_body.setItem(num, 0, QTableWidgetItem(f"{Id_Body}"))
+            self.table_body.setItem(num, 1, QTableWidgetItem(f"{Ty_Body}"))
+            self.table_body.setItem(num, 2, QTableWidgetItem(f"{Mt_Body}"))
+            self.table_body.setItem(num, 3, QTableWidgetItem(f"{Tb_Body}"))
+            self.table_body.setItem(num, 4, QTableWidgetItem(f"{Cm_Body}"))
+
+            # Guardamos la información en una lista
+            self.Body['Surfaces'] = self.SurfacesOfBody
+            self.Body['ID'] = Id_Body
+            self.Body['Type'] = Ty_Body
+            self.Body['Material'] = Mt_Body
+            self.Body['SidePoint'] = Tb_Body
+            self.Body['Comment'] = Cm_Body
+
+            self.BodyList.append(self.Body)
 
         elif num == 0:
+
             msgBox = QMessageBox()
             msgBox.setText("No hay superficies previamente agregadas.")
             msgBox.setStandardButtons(QMessageBox.Cancel)
@@ -502,11 +533,14 @@ class MainWindow(QMainWindow):
         self.count_body += 1
 
     def __quit_table_body(self):
+        # Quitamos el ultimo Body agregado a la tabla.
         num = self.table_body.rowCount()
         self.table_body.removeRow(num+1)
         self.table_body.setRowCount(num-1)
         self.table_body.setHorizontalHeaderLabels(self.column_names_body)
         self.count_body -= 1
+        # Quitamos el ultimo elemento de la lista.
+        self.BodyList = self.BodyList[:-1]
 
     def onClicked(self, index):
         row = index.row()
@@ -520,12 +554,84 @@ class MainWindow(QMainWindow):
             t_item = QTableWidgetItem(p.text())
             self.table_surf.setItem(row, 1, t_item)
 
-    def GetDataSurface(self):
-
-        print('Continuara...')
+    # ========= GET DATA ==========
 
     def GetDataBody(self):
-        print('Continuara...')
+        self.SurfacesOfBody
+        self.BodyList
+
+    def input(self):
+
+        # Iniciamos
+        g=GeometryDefinition("{}".format, unit="{}".format, angle="{}".format)
+
+        self.s = {}
+        self.b = {}
+        self.m = {}
+
+        for i, body in enumerate(self.BodyList):
+
+            # (1) Definimos las superficies
+            for j,surface in enumerate(body['Surfaces']):
+
+                label = '{}'.format(surface['Label'])
+                indices = '{}'.format(surface['Indices'])
+                scale = '{}'.format(surface['Scale'])
+                rotation = '{}'.format(surface['Rotation'])
+                translation = '{}'.format(surface['Position'])
+                angle = '{}'.format(surface['Angle'])
+
+                self.s[label] = g.surface(label, indices, scale, rotation, translation, angle)
+
+            if body['Type'] == 'body':
+
+                label = '{}'.format(body['ID'])
+                material = '{}'.format(body['Material'])
+                surfaces = '{}'.format(body['Surfaces'])
+                bodies = '{}'.format(body['Bodies'])
+                modules = '{}'.format(body['Modules'])
+                comment = '{}'.format(body['Comment'])
+
+                self.b['B{}'.format(i)] = g.body(label, material, surfaces, bodies, modules, comment)
+
+
+            elif body['Type'] == 'module':
+
+                label = '{}'.format(body['ID'])
+                material = '{}'.format(body['Material'])
+                surfaces = '{}'.format(body['Surfaces'])
+                bodies = '{}'.format(body['Bodies'])
+                modules = '{}'.format(body['Modules'])
+                comment = '{}'.format(body['Comment'])
+
+                self.m[label] = g.body(label, material, surfaces, bodies, modules, comment)
+
+
+        # s1=g.surface(starred=True)
+        # s2=g.surface(indices=(1,0,1,0,1), scale=(2,3,4), rotation=(5,6,7), translation=(8,9,1))
+        # s3=g.surface(indices=(1,0,1,0,1), xscale=20, yscale=30, zscale=40, omega=50, theta=60, phi=70, xshift=80, yshift=90, zshift=100, angle="deg")
+        #
+        # b1=g.body("B1", material=-100, comment="body number 1")
+        # b2=g.body("B2", material=-200, surfaces=[(s1, 1), (s2, -1)], bodies=[b1], comment="body number 2")
+        #
+        # m1=g.module(material=3, surfaces=[(s1, 1), (s2, -1), (s3, 1)], bodies=["B2"], modules=["M2"], scale=(2,3,4), rotation=(5,6,7), translation=(8,9,1), angle="deg", comment="module number 1")
+        # m2=g.module("M2", material=4, surfaces=[(s1, 1), (s2, -1), (s3, 1)], bodies=[b2], modules=[m1], xscale=20, yscale=30, zscale=40, omega=50, theta=60, phi=70, xshift=80, yshift=90, zshift=100, comment="module number 2")
+        # m3=g.module("M3", material=5, comment="module number 3")
+        #
+        # c1=g.clone("C1", m1, comment="clone number 1")
+        # c2=g.clone("C2", m2, scale=(2,3,4), rotation=(5,6,7), translation=(8,9,1), comment="clone number 2")
+        # c3=g.clone("C3", "M3", xscale=20, yscale=30, zscale=40, omega=50, theta=60, phi=70, xshift=80, yshift=90, zshift=100, unit="cm", angle="rad", comment="clone number 3")
+        #
+        # f1=g.include("filename1.test", comment="non starred file")
+        # f2=g.include("filename2.test", starred=True, comment="starred file")
+        #
+        # e=g.end()
+        #
+        # g.show_void_inner_volumes(False)
+        #
+        # print(g)
+        # g.export_definition("test")
+
 
     def Load_QML(self):
 
@@ -635,6 +741,17 @@ class MainWindow(QMainWindow):
         #
         #
         # }
+
+    def Load_Plotly(self):
+        print('Continuara..')
+
+
+    def ShowGraphPlotly(self):
+
+        df = px.data.tips()
+        fig = px.box(df, x="day", y="total_bill", color="smoker")
+        fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
+        self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
 
     def Get3DView(self):
         print(' ')
