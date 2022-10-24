@@ -34,12 +34,14 @@ def style_names(list_name):
                            'Cylinder', 'Hyperbolic cylinder', 'Cone', 'One sheet hyperboloid',
                            'Two sheet hyperboloid', 'Paraboloid', 'Parabolic cylinder',
                            'Hyperbolic paraboloid']
+    elif list_name == 'units':
+        style_list = ['cm', 'inch']
     elif list_name == 'angle':
         style_list = ['Rad', 'Deg']
     elif list_name == 'body':
         style_list = ['Body', 'Module']
     elif list_name == 'material':
-        style_list = ['Cdte', 'Si']
+        style_list = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
     result = []
     for style in style_list:
@@ -48,6 +50,21 @@ def style_names(list_name):
         else:
             result.append(style)
     return result
+
+def surfaces_indices(surface):
+    style_list = ['Surface','Surface implicit form', 'Plane', 'Esfera',
+                       'Cylinder', 'Hyperbolic cylinder', 'Cone', 'One sheet hyperboloid',
+                       'Two sheet hyperboloid', 'Paraboloid', 'Parabolic cylinder',
+                       'Hyperbolic paraboloid']
+
+    indices = [(1,1,1,1,1), (0,0,0,0,0), (0,0,0,1,0), (1,1,1,0,-1), (1,1,0,0,-1),
+            (1,-1,0,0,-1), (1,1,-1,0,0), (1,1,-1,0,-1), (1,1,-1,0,1), (1,1,0,-1,0),
+            (1,0,0,-1,0), (1,-1,0,-1,0)]
+
+    for i, surf_list in enumerate(style_list):
+        if surface == surf_list:
+            return indices[i]
+
 
 class PopUp(QDialog):
     def __init__(self, labels):
@@ -112,10 +129,10 @@ class MainWindow(QMainWindow):
         # # Panel completo
 
         layout = QHBoxLayout(self._main)
-        layout.addLayout(self.llayout, 16)
-        layout.addLayout(self.cllayout, 33)
-        layout.addLayout(self.crlayout, 16)
-        layout.addLayout(self.rlayout, 33)
+        layout.addLayout(self.llayout, 13)
+        layout.addLayout(self.cllayout, 34)
+        layout.addLayout(self.crlayout, 17)
+        layout.addLayout(self.rlayout, 34)
 
     def load(self):
         axSelect = QAxSelect(self)
@@ -144,7 +161,30 @@ class MainWindow(QMainWindow):
 
         # (1) Creamos y definimos caracteristicas de los widgets
 
+        self.ConfigGeneral = {}
         self.count_surfaces = 0
+
+        # # Titulo
+        self.title_name = QPlainTextEdit()
+        self.title_name.setPlainText("Título")
+
+        # # Unidades longiutd
+        self._style_unit = QComboBox()
+        init_widget(self._style_unit, "styleComboBox")
+        self._style_unit.addItems(style_names(list_name='units'))
+
+        style_unit_label = QLabel("Unit:")
+        init_widget(style_unit_label, "unit_label")
+        style_unit_label.setBuddy(self._style_unit)
+
+        # # Unidades angulares
+        self._style_angle = QComboBox()
+        init_widget(self._style_angle, "styleComboBox")
+        self._style_angle.addItems(style_names(list_name='angle'))
+
+        style_angle_label = QLabel("Angle:")
+        init_widget(style_angle_label, "superficie_label")
+        style_angle_label.setBuddy(self._style_angle)
 
         # # Lista de opciones de superficies
         self._style_surfaces = QComboBox()
@@ -189,15 +229,6 @@ class MainWindow(QMainWindow):
         self._zrot.setValue(0)
         init_widget(self._zrot, "phi-label")
 
-        # # Lista de opciones de medidas de angulo
-        self._style_angle = QComboBox()
-        init_widget(self._style_angle, "styleComboBox")
-        self._style_angle.addItems(style_names(list_name='angle'))
-
-        style_angle_label = QLabel("Angle type:")
-        init_widget(style_angle_label, "angle_label")
-        style_angle_label.setBuddy(self._style_angle)
-
         # # Scale
         # X
         self._xsca = QDoubleSpinBox()
@@ -226,7 +257,11 @@ class MainWindow(QMainWindow):
 
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
-        self.llayout.addWidget(QLabel("Configuración:"))
+        self.llayout.addWidget(QLabel("Configuración General:"))
+        self.llayout.addWidget(self.title_name)
+        self.llayout.addWidget(self._style_angle)
+        self.llayout.addWidget(self._style_unit)
+        self.llayout.addWidget(QLabel("Configuración para Superficies:"))
         self.llayout.addWidget(QLabel("Surfaces:"))
         self.llayout.addWidget(self._style_surfaces)
         self.llayout.addWidget(QLabel("Position:"))
@@ -234,7 +269,6 @@ class MainWindow(QMainWindow):
         self.llayout.addWidget(self._ypos)
         self.llayout.addWidget(self._zpos)
         self.llayout.addWidget(QLabel("Rotation:"))
-        self.llayout.addWidget(self._style_angle)
         self.llayout.addWidget(self._xrot)
         self.llayout.addWidget(self._yrot)
         self.llayout.addWidget(self._zrot)
@@ -262,8 +296,8 @@ class MainWindow(QMainWindow):
         self.table_surface = QTableWidget()
         header = self.table_surface.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
-        self.table_surface.setColumnCount(5)
-        self.column_names_surface = ["ID","Surface","Traslation", "Rotation", "Scale"]
+        self.table_surface.setColumnCount(6)
+        self.column_names_surface = ["ID","Surface","Indices","Traslation", "Rotation", "Scale"]
         self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
 
         # # Botón de Formar body
@@ -337,7 +371,7 @@ class MainWindow(QMainWindow):
 
         self.crlayout = QVBoxLayout()
         self.crlayout.setContentsMargins(1, 1, 1, 1)
-        self.crlayout.addWidget(QLabel("Configuración:"))
+        self.crlayout.addWidget(QLabel("Configuración para Cuerpos:"))
         self.crlayout.addWidget(QLabel("Body o Module:"))
         self.crlayout.addWidget(self._style_body)
         self.crlayout.addWidget(QLabel("ID - Body o Module:"))
@@ -353,7 +387,7 @@ class MainWindow(QMainWindow):
 
         # (3) Conectamos los botones a las acciones
 
-        self.table_surf.clicked.connect(self.onClicked)
+        self.table_surf.clicked.connect(self.__onClicked_TableSurf)
         self.button_mat.clicked.connect(self.__add_material)
         self.button4.clicked.connect(self.__add_table_body)
         self.button5.clicked.connect(self.__quit_table_body)
@@ -370,14 +404,27 @@ class MainWindow(QMainWindow):
         header = self.table_body.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         self.table_body.setColumnCount(6)
-        self.column_names_body = ["ID","Body","Material", "Surfaces","Side Point" "Comentario"]
+        self.column_names_body = ["ID","Body", "Material", "Surfaces", "Side Point", "Comentario"]
         self.table_body.setHorizontalHeaderLabels(self.column_names_body)
 
+        # # Tabla de grupos de bodys o module
+        self.table_group = QTableWidget()
+        header = self.table_group.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        self.table_group.setColumnCount(2)
+        self.column_names_group = ["Externo", "Internos"]
+        self.table_group.setHorizontalHeaderLabels(self.column_names_group)
+
         # # Botones para agregar y quitar bodys
-        self.button6 = QPushButton("View")
-        init_widget(self.button6, "view_label")
-        self.button7 = QPushButton("Armar Input")
-        init_widget(self.button7, "armar_input_label")
+        self.button6 = QPushButton("Crear grupo")
+        init_widget(self.button6, "crear_grupo_label")
+        self.button7 = QPushButton("Quitar grupo")
+        init_widget(self.button7, "quitar_grupo_label")
+        self.button8 = QPushButton("View")
+        init_widget(self.button8, "view_label")
+        self.button9 = QPushButton("Armar Geometría")
+        init_widget(self.button9, "armar_geometry_label")
+
 
         # (2) Agregamos widgets al panel
 
@@ -385,15 +432,28 @@ class MainWindow(QMainWindow):
         self.rlayout.setContentsMargins(1, 1, 1, 1)
         self.rlayout.addWidget(QLabel("Tabla de cuerpos:"))
         self.rlayout.addWidget(self.table_body)
+        self.rlayout.addWidget(QLabel("Grupos de cuerpos:"))
         self.rlayout.addWidget(self.button6)
+        self.rlayout.addWidget(self.table_group)
         self.rlayout.addWidget(self.button7)
+        self.rlayout.addWidget(QLabel("Visualizar Geometría:"))
+        self.rlayout.addWidget(self.button8)
+        self.rlayout.addWidget(QLabel("Script Geometry - PENELOPE:"))
+        self.rlayout.addWidget(self.button9)
 
         # (3) Conectamos los botones a las acciones
 
-        self.button6.clicked.connect(self.view)
-        self.button7.clicked.connect(self.input)
+        self.table_body.itemClicked.connect(self.__OnlyCellChecked)
+        self.table_group.clicked.connect(self.__onClicked_TableGroup)
+        self.button6.clicked.connect(self.__add_table_group)
+        self.button7.clicked.connect(self.__quit_table_group)
+        self.button8.clicked.connect(self.view)
+        self.button9.clicked.connect(self.__GetGeometryInput)
 
-    # =========== FUNCTIONS ===============
+
+    # ============= FUNCTIONS =================
+
+    # Surface functions
 
     def __add_table_surface(self):
 
@@ -411,28 +471,51 @@ class MainWindow(QMainWindow):
         zsca = self._zsca.value()
 
         surface = str(self._style_surfaces.currentText())
+        indices = surfaces_indices(surface)
+
 
         num = self.table_surface.rowCount()
 
         self.table_surface.setRowCount(num+1)
-        self.table_surface.setColumnCount(4)
+        self.table_surface.setColumnCount(6)
         self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
 
         self.table_surface.setItem(num, 0, QTableWidgetItem(f"S{self.count_surfaces}"))
         self.table_surface.setItem(num, 1, QTableWidgetItem(f"{surface}"))
-        self.table_surface.setItem(num, 2, QTableWidgetItem(f"({xpos:.2f},{ypos:.2f},{zpos:.2f})"))
-        self.table_surface.setItem(num, 3, QTableWidgetItem(f"({xrot:.2f},{yrot:.2f},{zrot:.2f})"))
-        self.table_surface.setItem(num, 4, QTableWidgetItem(f"({xsca:.2f},{ysca:.2f},{zsca:.2f})"))
+        self.table_surface.setItem(num, 2, QTableWidgetItem(f"{indices}"))
+        self.table_surface.setItem(num, 3, QTableWidgetItem(f"({xpos:.2f},{ypos:.2f},{zpos:.2f})"))
+        self.table_surface.setItem(num, 4, QTableWidgetItem(f"({xrot:.2f},{yrot:.2f},{zrot:.2f})"))
+        self.table_surface.setItem(num, 5, QTableWidgetItem(f"({xsca:.2f},{ysca:.2f},{zsca:.2f})"))
 
         # Sumamos una superficie mas!
         self.count_surfaces += 1
 
     def __quit_table_surface(self):
         num = self.table_surface.rowCount()
-        self.table_surface.removeRow(num+1)
-        self.table_surface.setRowCount(num-1)
-        self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
-        self.count_surfaces -= 1
+
+        if num != 0:
+            self.table_surface.removeRow(num+1)
+            self.table_surface.setRowCount(num-1)
+            self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
+            self.count_surfaces -= 1
+
+        elif num == 0:
+            msgBox = QMessageBox()
+            msgBox.setText("No hay superficies para quitar de la tabla.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+    # Bodys functions
+
+    def __convert_str_to_tuple(self, var, type):
+        s = var.split(",")
+        if type == 'int':
+            var = tuple([int(i.lstrip('(').rstrip(')')) for i in s])
+        elif type == 'str':
+            var = tuple([str(i.lstrip('(').rstrip(')')) for i in s])
+        elif type == 'float':
+            var = tuple([float(i.lstrip('(').rstrip(')')) for i in s])
+        return var
 
     def __formar_table_body(self):
 
@@ -444,18 +527,28 @@ class MainWindow(QMainWindow):
             num = self.table_surface.rowCount()
             for n in range(num):
 
+                self.SurfaceID = {}
                 # Extraemos la información de la superficie
                 Id_Surface = self.table_surface.item(n, 0).text()
                 Ty_Surface = self.table_surface.item(n, 1).text()
-                Ps_Surface = self.table_surface.item(n, 2)
-                Rt_Surface = self.table_surface.item(n, 3)
-                Sc_Surface = self.table_surface.item(n, 4)
+                In_Surface = self.table_surface.item(n, 2).text()
+                Ps_Surface = self.table_surface.item(n, 3).text()
+                Rt_Surface = self.table_surface.item(n, 4).text()
+                Sc_Surface = self.table_surface.item(n, 5).text()
 
-                self.SurfacesOfBody['ID'] = Id_Surface
-                self.SurfacesOfBody['Type'] = Ty_Surface
-                self.SurfacesOfBody['Position'] = Ps_Surface
-                self.SurfacesOfBody['Rotation'] = Rt_Surface
-                self.SurfacesOfBody['Scale'] = Sc_Surface
+                In_Surface = self.__convert_str_to_tuple(In_Surface, type='int')
+                Ps_Surface = self.__convert_str_to_tuple(Ps_Surface, type='float')
+                Rt_Surface = self.__convert_str_to_tuple(Rt_Surface, type='float')
+                Sc_Surface = self.__convert_str_to_tuple(Sc_Surface, type='float')
+
+                self.SurfaceID['Type'] = Ty_Surface
+                self.SurfaceID['Label'] = Id_Surface
+                self.SurfaceID['Indices'] = In_Surface
+                self.SurfaceID['Position'] = Ps_Surface
+                self.SurfaceID['Rotation'] = Rt_Surface
+                self.SurfaceID['Scale'] = Sc_Surface
+
+                self.SurfacesOfBody['{}'.format(Id_Surface)] = self.SurfaceID
 
                 # Agregamos las superficies a la subtabla
                 self.table_surf.setRowCount(n+1)
@@ -463,7 +556,6 @@ class MainWindow(QMainWindow):
                 self.table_surf.setHorizontalHeaderLabels(self.column_names_surf)
                 self.table_surf.setItem(n, 0, QTableWidgetItem(f"{Id_Surface}"))
                 self.table_surf.setItem(n, 1, QTableWidgetItem("1"))
-
 
         elif self.table_surface.rowCount() == 0:
             msgBox = QMessageBox()
@@ -487,38 +579,53 @@ class MainWindow(QMainWindow):
             self.Body = {}
 
             # Extraemos la información del Body
-            Id_Body = f"B{self.count_body}"
-            Ty_Body = str(self._style_body.currentText())
-            Mt_Body = str(self._style_material.currentText())
-            Cm_Body = self.body_comment.toPlainText()
+            self.__Id_Body = f"B{self.count_body}"
+            self.__Ty_Body = str(self._style_body.currentText())
+            self.__Mt_Body = str(self._style_material.currentText())
+            self.__Cm_Body = self.body_comment.toPlainText()
 
             num = self.table_surf.rowCount()
-            Tb_Body = []
+            self.__Tb_Body = []
+            self.__Sf_Body = []
+            self.__Sp_Body = []
             for n in range(num):
-                item = self.table_surf.itemAt(n,1)
-                Tb_Body.append(item.text())
+                surf = self.table_surf.item(n,0).text()
+                item = self.table_surf.item(n,1).text()
+                self.__Sf_Body.append(surf)
+                self.__Tb_Body.append(item)
+                self.__Sp_Body.append((surf,item))
 
             # Lo agregamos a la tabla de Bodys
             num = self.table_body.rowCount()
             self.table_body.setRowCount(num+1)
-            self.table_body.setColumnCount(5)
+            self.table_body.setColumnCount(6)
             self.table_body.setHorizontalHeaderLabels(self.column_names_body)
 
-            self.table_body.setItem(num, 0, QTableWidgetItem(f"{Id_Body}"))
-            self.table_body.setItem(num, 1, QTableWidgetItem(f"{Ty_Body}"))
-            self.table_body.setItem(num, 2, QTableWidgetItem(f"{Mt_Body}"))
-            self.table_body.setItem(num, 3, QTableWidgetItem(f"{Tb_Body}"))
-            self.table_body.setItem(num, 4, QTableWidgetItem(f"{Cm_Body}"))
+            self.__chkBoxID = QTableWidgetItem(f"{self.__Id_Body}")
+            self.__chkBoxID.setText(f"{self.__Id_Body}")
+            self.__chkBoxID.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            self.__chkBoxID.setCheckState(Qt.Unchecked)
+
+            self.table_body.setItem(num, 0, self.__chkBoxID)
+            self.table_body.setItem(num, 1, QTableWidgetItem(f"{self.__Ty_Body}"))
+            self.table_body.setItem(num, 2, QTableWidgetItem(f"{self.__Mt_Body}"))
+            self.table_body.setItem(num, 3, QTableWidgetItem(f"{self.__Sf_Body}"))
+            self.table_body.setItem(num, 4, QTableWidgetItem(f"{self.__Tb_Body}"))
+            self.table_body.setItem(num, 5, QTableWidgetItem(f"{self.__Cm_Body}"))
+
 
             # Guardamos la información en una lista
             self.Body['Surfaces'] = self.SurfacesOfBody
-            self.Body['ID'] = Id_Body
-            self.Body['Type'] = Ty_Body
-            self.Body['Material'] = Mt_Body
-            self.Body['SidePoint'] = Tb_Body
-            self.Body['Comment'] = Cm_Body
+            self.Body['ID'] = self.__Id_Body
+            self.Body['Type'] = self.__Ty_Body
+            self.Body['Material'] = self.__Mt_Body
+            self.Body['SidePoint'] = self.__Sp_Body
+            self.Body['Comment'] = self.__Cm_Body
 
             self.BodyList.append(self.Body)
+
+            # Sumamos un body mas
+            self.count_body += 1
 
         elif num == 0:
 
@@ -529,20 +636,27 @@ class MainWindow(QMainWindow):
 
         # Quitamos los datos de la tabla surface
         self.table_surf.setRowCount(0)
-        # Sumamos un body mas
-        self.count_body += 1
 
     def __quit_table_body(self):
         # Quitamos el ultimo Body agregado a la tabla.
         num = self.table_body.rowCount()
-        self.table_body.removeRow(num+1)
-        self.table_body.setRowCount(num-1)
-        self.table_body.setHorizontalHeaderLabels(self.column_names_body)
-        self.count_body -= 1
-        # Quitamos el ultimo elemento de la lista.
-        self.BodyList = self.BodyList[:-1]
+        if num != 0:
+            self.table_body.removeRow(num+1)
+            self.table_body.setRowCount(num-1)
+            self.table_body.setHorizontalHeaderLabels(self.column_names_body)
 
-    def onClicked(self, index):
+            # Quitamos un elemento del conteo de bodys
+            self.count_body -= 1
+            self.count_surfaces -= len(self.__Sf_Body)
+            # Quitamos el ultimo elemento de la lista.
+            self.BodyList = self.BodyList[:-1]
+        elif num == 0:
+            msgBox = QMessageBox()
+            msgBox.setText("No hay bodys para quitar de la tabla.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+    def __onClicked_TableSurf(self, index):
         row = index.row()
         column = index.column()
         x = self.table_surf.columnViewportPosition(column)
@@ -554,58 +668,220 @@ class MainWindow(QMainWindow):
             t_item = QTableWidgetItem(p.text())
             self.table_surf.setItem(row, 1, t_item)
 
-    # ========= GET DATA ==========
+    # Group functions
 
-    def GetDataBody(self):
-        self.SurfacesOfBody
-        self.BodyList
+    def __add_table_group(self):
 
-    def input(self):
+        """ Update the plot with the current input values """
+        self.RowBodysList = []
 
-        # Iniciamos
-        g=GeometryDefinition("{}".format, unit="{}".format, angle="{}".format)
+        # # Tomamos el ID del Body checked.
+        for i in range(self.table_body.rowCount()):
+            if self.table_body.item(i, 0).checkState() == Qt.Checked:
+                checked_body = self.table_body.item(i, 0).text()
+                checked = 'Checked'
+                break
+            else:
+                checked = 'Unchecked'
 
-        self.s = {}
-        self.b = {}
-        self.m = {}
+        if checked == 'Checked':
+
+            # Lo agregamos a la tabla de Grupos de Bodys.
+            num = self.table_group.rowCount()
+            self.table_group.setRowCount(num+1)
+            self.table_group.setColumnCount(2)
+            self.table_group.setHorizontalHeaderLabels(self.column_names_group)
+
+            self.table_group.setItem(num, 0, QTableWidgetItem(checked_body))
+            self.table_group.setItem(num, 1, QTableWidgetItem(f"Vacio"))
+
+            # # Creamos una lista con los Bodys creados y quitamos el checked
+            self.__List_Bodys = []
+            num_body = self.table_body.rowCount()
+            for n in range(num_body):
+                bodyID = self.table_body.item(n,0).text()
+                self.__List_Bodys.append(bodyID)
+
+            self.__List_Bodys.remove(checked_body)
+            # # Unchecked de la tabla de Bodys.
+            self.__chkBoxID.setCheckState(Qt.Unchecked)
+
+        elif checked == 'Unchecked':
+            msgBox = QMessageBox()
+            msgBox.setText("No hay un Body marcado para crear un grupo.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+    def __quit_table_group(self):
+        # Quitamos el ultimo Body agregado a la tabla.
+        num = self.table_group.rowCount()
+        if num != 0:
+            self.table_group.removeRow(num+1)
+            self.table_group.setRowCount(num-1)
+            self.table_group.setHorizontalHeaderLabels(self.column_names_group)
+
+        elif num == 0:
+            msgBox = QMessageBox()
+            msgBox.setText("No hay grupos para quitar de la tabla.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+    def __onClicked_TableGroup(self, index):
+
+        row = index.row()
+        column = index.column()
+        x = self.table_group.columnViewportPosition(column)
+        y = self.table_group.rowViewportPosition(row) + self.table_group.rowHeight(row)
+        pos = self.table_group.viewport().mapToGlobal(QPoint(x, y))
+        p = PopUp(self.__List_Bodys)
+        p.move(pos)
+        if p.exec() == QDialog.Accepted:
+            # t_item = QTableWidgetItem(p.text())
+            # self.table_group.setItem(row, 1, t_item)
+            self.RowBodysList.append(p.text())
+
+            self.table_group.setItem(row, 1, QTableWidgetItem(str(self.RowBodysList)))
+
+            self.__List_Bodys.remove(p.text())
+
+    def __OnlyCellChecked(self):
+        list_checked = []
+        for i in range(self.table_body.rowCount()):
+            if self.table_body.item(i, 0).checkState() == Qt.Checked:
+                list_checked.append(self.table_body.item(i, 0).text())
+
+        if len(list_checked) > 1:
+            for i in range(self.table_body.rowCount()):
+                if self.table_body.item(i, 0).checkState() == Qt.Checked:
+                    self.table_body.item(i,0).setCheckState(Qt.Unchecked)
+
+
+    # ========= GET DATA INPUT ==========
+
+
+    def __TypeSurface(self, body, type_surface, surface_label):
+
+        # Definimos parametros del surface
+        surface = body['Surfaces'][surface_label]
+        label = '{}'.format(surface['Label'])
+        indices = surface['Indices']
+        scale = surface['Scale']
+        rotation = surface['Rotation']
+        translation = surface['Position']
+        angle = '{}'.format(self.__Angle)
+
+        if type_surface == 'Surface':
+            self.g.surface(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Surface implicit form':
+            self.g.surface_implicit_form(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Plane':
+            self.g.surface_plane(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Esfera':
+            self.g.surface_sphere(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Cylinder':
+            self.g.surface_implicit_form(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Hyperbolic cylinder':
+            self.g.surface_hyperbolic_cylinder(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Cone':
+            self.g.surface_cone(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'One sheet hyperboloid':
+            self.g.surface_one_sheet_hyperboloid(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Two sheet hyperboloid':
+            self.g.surface_two_sheet_hyperboloid(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Paraboloid':
+            self.g.surface_paraboloid(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Parabolic cylinder':
+            self.g.surface_parabolic_cylinder(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        elif type_surface == 'Hyperbolic paraboloid':
+            selg.g.surface_hyperbolic_paraboloid(label=label, indices=indices, scale=scale, rotation=rotation, translation=translation, angle=angle)
+
+        else:
+            msgBox = QMessageBox()
+            msgBox.setText("No se identifico el tipo de superficie.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+    def __GetGeometryInput(self):
+
+        # General
+        self.__Title = self.title_name.toPlainText()
+        self.__Unit = str(self._style_unit.currentText())
+        self.__Angle = str(self._style_angle.currentText())
+
+        # BodyGroup
+        self.BodyGroup = {}
+        num = self.table_group.rowCount()
+        self.__surf_int = []
+        self.__surf_ext = []
+        if num != 0:
+            for n in range(num):
+                 surf_ext = self.table_group.item(n,0).text()
+                 surf_int = self.table_group.item(n,1).text()
+                 self.__surf_ext.append(surf_ext)
+                 self.__surf_int.append(surf_int)
+            self.BodyGroup['Externo'] = surf_ext
+            self.BodyGroup['Interno'] = surf_ext
+
+
+        # # Iniciamos
+        self.g=GeometryDefinition("{}".format(self.__Title), unit="{}".format(self.__Unit), angle="{}".format(self.__Angle))
 
         for i, body in enumerate(self.BodyList):
 
             # (1) Definimos las superficies
-            for j,surface in enumerate(body['Surfaces']):
+            surfaces = list(body['Surfaces'].keys())
 
-                label = '{}'.format(surface['Label'])
-                indices = '{}'.format(surface['Indices'])
-                scale = '{}'.format(surface['Scale'])
-                rotation = '{}'.format(surface['Rotation'])
-                translation = '{}'.format(surface['Position'])
-                angle = '{}'.format(surface['Angle'])
+            for j,surf in enumerate(surfaces):
 
-                self.s[label] = g.surface(label, indices, scale, rotation, translation, angle)
+                type_surface = body['Surfaces'][surf]['Type']
+                self.__TypeSurface(body, type_surface, surface_label=surf)
 
-            if body['Type'] == 'body':
+            if body['Type'] == 'Body':
 
-                label = '{}'.format(body['ID'])
-                material = '{}'.format(body['Material'])
-                surfaces = '{}'.format(body['Surfaces'])
-                bodies = '{}'.format(body['Bodies'])
-                modules = '{}'.format(body['Modules'])
-                comment = '{}'.format(body['Comment'])
+                label = body['ID']
+                material = int(body['Material'])
+                surf_list = [(tup[0],int(tup[1])) for tup in body['SidePoint']]
+                comment = body['Comment']
 
-                self.b['B{}'.format(i)] = g.body(label, material, surfaces, bodies, modules, comment)
+                if num != 0 :
+                    for body in self.BodyGroup['Externo']:
+                        if body == label and body.startswith('B'):
+                            bodies = self.BodyGroup['Interno']
+                            self.g.body(label=label, material=material, surfaces=surf_list, bodies=bodies, comment=comment)
+
+                self.g.body(label=label, material=material, surfaces=surf_list, comment=comment)
 
 
-            elif body['Type'] == 'module':
+            elif body['Type'] == 'Module':
 
-                label = '{}'.format(body['ID'])
-                material = '{}'.format(body['Material'])
-                surfaces = '{}'.format(body['Surfaces'])
-                bodies = '{}'.format(body['Bodies'])
-                modules = '{}'.format(body['Modules'])
-                comment = '{}'.format(body['Comment'])
+                label = body['ID']
+                material = int(body['Material'])
+                surf_list = [(tup[0],int(tup[1])) for tup in body['SidePoint']]
+                comment = body['Comment']
 
-                self.m[label] = g.body(label, material, surfaces, bodies, modules, comment)
+                if num != 0:
+                    for body in self.BodyGroup['Externo']:
+                        if body == label and body.startswith('B') or body.startswith('M'):
+                            bodies = self.BodyGroup['Interno']
+                            self.g.module(label=label, material=material, surfaces=surf_list, bodies=bodies, modules=modules, comment=comment)
 
+                self.g.module(label=label, material=material, surfaces=surf_list, comment=comment)
+
+        e=self.g.end()
+        self.g.show_void_inner_volumes(False)
+        print(self.g)
+        self.g.export_definition("test")
 
         # s1=g.surface(starred=True)
         # s2=g.surface(indices=(1,0,1,0,1), scale=(2,3,4), rotation=(5,6,7), translation=(8,9,1))
@@ -629,8 +905,6 @@ class MainWindow(QMainWindow):
         #
         # g.show_void_inner_volumes(False)
         #
-        # print(g)
-        # g.export_definition("test")
 
 
     def Load_QML(self):
@@ -744,7 +1018,6 @@ class MainWindow(QMainWindow):
 
     def Load_Plotly(self):
         print('Continuara..')
-
 
     def ShowGraphPlotly(self):
 

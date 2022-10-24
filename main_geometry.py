@@ -1,18 +1,19 @@
 
 
-__author__ = "Antonio Serrano"
-__email__ = "toni.sm91@gmail.com"
-__version__ = "0.0.3"
-__license__ = "MIT License"
-
-__all__ = ["GeometryDefinition"]
+# __author__ = "Antonio Serrano"
+# __email__ = "toni.sm91@gmail.com"
+# __version__ = "0.0.3"
+# __license__ = "MIT License"
+#
+# __all__ = ["GeometryDefinition"]
 
 import os
 try:
-    from GeomView.Blocks import *
+    import GeomView.blocks as blocks
 except:
-    import Blocks
+    import GeomView.blocks as blocks
 
+import GeomView.blocks as blocks
 # GEOMETRY-DEFINITION MANAGER
 
 class GeometryDefinition():
