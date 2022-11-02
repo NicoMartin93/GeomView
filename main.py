@@ -1,8 +1,10 @@
 
 import os
 import sys
+import ast
+import plotly.express as px
 
-from PyQt5 import QtCore
+from PySide6 import QtWidgets
 from PySide6.QtCore import QUrl, QPoint, Qt
 from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QAction
 from PySide6.QtQml import QQmlApplicationEngine
@@ -12,8 +14,10 @@ from PySide6.QtWidgets import *
 from PySide6.QtQuick3D import QQuick3D
 from PySide6.QtQuick import QQuickView, QQuickWindow, QSGRendererInterface
 from PySide6.QtQuickWidgets import QQuickWidget
+from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from GeomView.main_geometry import GeometryDefinition
+from GeomView.WindowPlotly import WidgetPlotly
 
 import plotly.graph_objects as go
 # ----------------------------------------------------------------
@@ -64,7 +68,6 @@ def surfaces_indices(surface):
     for i, surf_list in enumerate(style_list):
         if surface == surf_list:
             return indices[i]
-
 
 class PopUp(QDialog):
     def __init__(self, labels):
@@ -420,11 +423,12 @@ class MainWindow(QMainWindow):
         init_widget(self.button6, "crear_grupo_label")
         self.button7 = QPushButton("Quitar grupo")
         init_widget(self.button7, "quitar_grupo_label")
-        self.button8 = QPushButton("View")
-        init_widget(self.button8, "view_label")
-        self.button9 = QPushButton("Armar Geometría")
-        init_widget(self.button9, "armar_geometry_label")
-
+        self.button8 = QPushButton('Plotly')
+        init_widget(self.button8, "view_plotly")
+        self.button9 = QPushButton("View")
+        init_widget(self.button9, "view_label")
+        self.button10 = QPushButton("Armar Geometría")
+        init_widget(self.button10, "armar_geometry_label")
 
         # (2) Agregamos widgets al panel
 
@@ -438,8 +442,9 @@ class MainWindow(QMainWindow):
         self.rlayout.addWidget(self.button7)
         self.rlayout.addWidget(QLabel("Visualizar Geometría:"))
         self.rlayout.addWidget(self.button8)
-        self.rlayout.addWidget(QLabel("Script Geometry - PENELOPE:"))
         self.rlayout.addWidget(self.button9)
+        self.rlayout.addWidget(QLabel("Script Geometry - PENELOPE:"))
+        self.rlayout.addWidget(self.button10)
 
         # (3) Conectamos los botones a las acciones
 
@@ -447,8 +452,9 @@ class MainWindow(QMainWindow):
         self.table_group.clicked.connect(self.__onClicked_TableGroup)
         self.button6.clicked.connect(self.__add_table_group)
         self.button7.clicked.connect(self.__quit_table_group)
-        self.button8.clicked.connect(self.view)
-        self.button9.clicked.connect(self.__GetGeometryInput)
+        self.button8.clicked.connect(self.view_plotly)
+        self.button9.clicked.connect(self.view)
+        self.button10.clicked.connect(self.__GetGeometryInput)
 
 
     # ============= FUNCTIONS =================
@@ -821,17 +827,13 @@ class MainWindow(QMainWindow):
 
         # BodyGroup
         self.BodyGroup = {}
-        num = self.table_group.rowCount()
-        self.__surf_int = []
-        self.__surf_ext = []
-        if num != 0:
-            for n in range(num):
+        num_group = self.table_group.rowCount()
+        if num_group != 0:
+            for n in range(num_group):
                  surf_ext = self.table_group.item(n,0).text()
                  surf_int = self.table_group.item(n,1).text()
-                 self.__surf_ext.append(surf_ext)
-                 self.__surf_int.append(surf_int)
-            self.BodyGroup['Externo'] = surf_ext
-            self.BodyGroup['Interno'] = surf_ext
+                 surf_int = ast.literal_eval(surf_int)
+                 self.BodyGroup[surf_ext] = surf_int
 
 
         # # Iniciamos
@@ -854,14 +856,15 @@ class MainWindow(QMainWindow):
                 surf_list = [(tup[0],int(tup[1])) for tup in body['SidePoint']]
                 comment = body['Comment']
 
-                if num != 0 :
-                    for body in self.BodyGroup['Externo']:
-                        if body == label and body.startswith('B'):
-                            bodies = self.BodyGroup['Interno']
-                            self.g.body(label=label, material=material, surfaces=surf_list, bodies=bodies, comment=comment)
-
-                self.g.body(label=label, material=material, surfaces=surf_list, comment=comment)
-
+                if num_group != 0 :
+                    body_group = list(self.BodyGroup.keys())
+                    if label in body_group and label.startswith('B'):
+                        bodies = self.BodyGroup[label]
+                        self.g.body(label=label, material=material, surfaces=surf_list, bodies=bodies, comment=comment)
+                    else:
+                        self.g.body(label=label, material=material, surfaces=surf_list, comment=comment)
+                else:
+                    self.g.body(label=label, material=material, surfaces=surf_list, comment=comment)
 
             elif body['Type'] == 'Module':
 
@@ -870,13 +873,15 @@ class MainWindow(QMainWindow):
                 surf_list = [(tup[0],int(tup[1])) for tup in body['SidePoint']]
                 comment = body['Comment']
 
-                if num != 0:
-                    for body in self.BodyGroup['Externo']:
-                        if body == label and body.startswith('B') or body.startswith('M'):
-                            bodies = self.BodyGroup['Interno']
-                            self.g.module(label=label, material=material, surfaces=surf_list, bodies=bodies, modules=modules, comment=comment)
-
-                self.g.module(label=label, material=material, surfaces=surf_list, comment=comment)
+                if num_goup != 0:
+                    body_group = list(self.BodyGroup.keys())
+                    if label in body_group and label.startswith('M'):
+                        bodies = self.BodyGroup[label]
+                        self.g.module(label=label, material=material, surfaces=surf_list, bodies=bodies, comment=comment)
+                    else:
+                        self.g.module(label=label, material=material, surfaces=surf_list, comment=comment)
+                else:
+                    self.g.module(label=label, material=material, surfaces=surf_list, comment=comment)
 
         e=self.g.end()
         self.g.show_void_inner_volumes(False)
@@ -906,6 +911,7 @@ class MainWindow(QMainWindow):
         # g.show_void_inner_volumes(False)
         #
 
+    # ============ VIEW GEOMETRY =============
 
     def Load_QML(self):
 
@@ -1016,15 +1022,9 @@ class MainWindow(QMainWindow):
         #
         # }
 
-    def Load_Plotly(self):
-        print('Continuara..')
-
-    def ShowGraphPlotly(self):
-
-        df = px.data.tips()
-        fig = px.box(df, x="day", y="total_bill", color="smoker")
-        fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
-        self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
+    def view_plotly(self):
+        self._window_plotly = WidgetPlotly()
+        self._window_plotly.show()
 
     def Get3DView(self):
         print(' ')
