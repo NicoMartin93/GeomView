@@ -7,7 +7,7 @@ class Plotly_Geometry:
     def __init__(self):
         tuki=0
 
-    def cylinder(r, h, a =0, nt=100, nv =50):
+    def cylinder(r, h, a=0, nt=100, nv =50):
         """
         parametrize the cylinder of radius r, height h, base point a
         """
@@ -30,22 +30,22 @@ class Plotly_Geometry:
         y = r*np.sin(theta)
         z = h*np.ones(theta.shape)
         return x, y, z
-
-    def paralepipede():
-        go.Mesh3d(
-        # 8 vertices of a cube
-        x=[0.608, 0.608, 0.998, 0.998, 0.608, 0.608, 0.998, 0.998],
-        y=[0.091, 0.963, 0.963, 0.091, 0.091, 0.963, 0.963, 0.091],
-        z=[0.140, 0.140, 0.140, 0.140, 0.571, 0.571, 0.571, 0.571],
-
-        i = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2],
-        j = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3],
-        k = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6],
-        opacity=0.6,
-        color='#DC143C',
-        flatshading = True
-    )
-    ])
+    #
+    # def paralepipede():
+    #     go.Mesh3d(
+    #     # 8 vertices of a cube
+    #     x=[0.608, 0.608, 0.998, 0.998, 0.608, 0.608, 0.998, 0.998],
+    #     y=[0.091, 0.963, 0.963, 0.091, 0.091, 0.963, 0.963, 0.091],
+    #     z=[0.140, 0.140, 0.140, 0.140, 0.571, 0.571, 0.571, 0.571],
+    #
+    #     i = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2],
+    #     j = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3],
+    #     k = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6],
+    #     opacity=0.6,
+    #     color='#DC143C',
+    #     flatshading = True
+    #     )
+    #     ])
 
 
 class GetDataBody:
@@ -56,21 +56,13 @@ class GetDataBody:
 
         for num_b in range(self.num_bodies):
             data_body = mainWin.BodyList[num_b]
-            self.data_surfaces = data_body['Surfaces']
-            num_surfaces = len(data_surfaces)
-
-            for num_s in range(num_surfaces):
-                surface = data_surfaces['S{}'.format(num_s)]
-
-                type_surface = surface['Type']
-                pos_surface = surface['Position']
-                rot_surface = surface['Rotation']
-                sca_surface = surface['Scale']
+            self.__data_surfaces = data_body['Surfaces']
+            self.__GetBodyTypeWithSurfaces()
 
     def __GetBodyTypeWithSurfaces(self):
 
         surfaces = []
-        num_surfaces = len(data_surfaces)
+        num_surfaces = len(self.__data_surfaces)
         for num_s in range(num_surfaces):
             surface = data_surfaces['S{}'.format(num_s)]
             surfaces.append(surface['Type'])
@@ -82,12 +74,25 @@ class GetDataBody:
 
         return type_body
 
+    def Cylinder():
 
-                    radio = np.linalg.norm(np.array(sca_surface))
+        num_surfaces = len(self.__data_surfaces)
+        for num_s in range(num_surfaces):
 
-                if type_surface == 'Plane':
+            surface = data_surfaces['S{}'.format(num_s)]
+            type_surface = surface['Type']
 
-                    pos
+            pos_surface = surface['Position']
+            rot_surface = surface['Rotation']
+            sca_surface = surface['Scale']
+
+
+            if type_surface == 'Plane':
+                
+            elif type_surface == 'Cylinder':
+                r = np.linalg.norm(sca_surface)
+                a1 =
+
 
 
 
@@ -99,8 +104,8 @@ r2 = 1.35
 a2 = 1
 h2 = 3
 
-x1, y1, z1 = cylinder(r1, h1, a=a1)
-x2, y2, z2 = cylinder(r2, h2, a=a2)
+x1, y1, z1 = Plotly_Geometry.cylinder(r1, h1, a=a1)
+x2, y2, z2 = Plotly_Geometry.cylinder(r2, h2, a=a2)
 
 colorscale = [[0, 'blue'],
              [1, 'blue']]
@@ -109,8 +114,8 @@ cyl1 = go.Surface(x=x1, y=y1, z=z1,
                  colorscale = colorscale,
                  showscale=False,
                  opacity=0.5)
-xb_low, yb_low, zb_low = boundary_circle(r1, h=a1)
-xb_up, yb_up, zb_up = boundary_circle(r1, h=a1+h1)
+xb_low, yb_low, zb_low =  Plotly_Geometry.boundary_circle(r1, h=a1)
+xb_up, yb_up, zb_up =  Plotly_Geometry.boundary_circle(r1, h=a1+h1)
 
 bcircles1 =go.Scatter3d(x = xb_low.tolist()+[None]+xb_up.tolist(),
                         y = yb_low.tolist()+[None]+yb_up.tolist(),
@@ -124,8 +129,8 @@ cyl2 = go.Surface(x=x2, y=y2, z=z2,
                  showscale=False,
                  opacity=0.7)
 
-xb_low, yb_low, zb_low = boundary_circle(r2, h=a2)
-xb_up, yb_up, zb_up = boundary_circle(r2, h=a2+h2)
+xb_low, yb_low, zb_low =  Plotly_Geometry.boundary_circle(r2, h=a2)
+xb_up, yb_up, zb_up =  Plotly_Geometry.boundary_circle(r2, h=a2+h2)
 
 bcircles2 =go.Scatter3d(x = xb_low.tolist()+[None]+xb_up.tolist(),
                         y = yb_low.tolist()+[None]+yb_up.tolist(),

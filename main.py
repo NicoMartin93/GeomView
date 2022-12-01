@@ -4,10 +4,11 @@ import sys
 import ast
 import plotly.express as px
 
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import QUrl, QPoint, Qt
 from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QAction
 from PySide6.QtQml import QQmlApplicationEngine
+
 
 from PySide6.QtAxContainer import QAxSelect, QAxWidget
 from PySide6.QtWidgets import *
@@ -87,55 +88,50 @@ class PopUp(QDialog):
     def text(self):
         return self.itemSelected
 
+
 class MainWindow(QMainWindow):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
 
-        # (1) Barra de herramientas superior
-        toolBar = QToolBar()
-        self.addToolBar(toolBar)
+        self.setWindowTitle("GeoView - PENELOPE")
 
-        # (1.1) Definimos FILE
-        fileMenu = self.menuBar().addMenu("&File")
-        # Dentro de File las opciones de Load... y Exit
-
-        # Definimos la accion de Load
+        # (1) MENU PRINCIPAL
+        # (1.1) FILE
+        fileMenu = self.menuBar().addMenu("&File")  # Dentro de File las opciones de Load... y Exit
         loadAction = QAction("Load...", self, shortcut="Ctrl+L", triggered=self.load)
-        viewAction = QAction('View', self, shortcut="Ctrl+V", triggered=self.view)
-        # Agregamos la accion en la barra de herramienta al apretar Load...
         fileMenu.addAction(loadAction)
-        # Agregamos la accion en el menu principal de opciones
-        toolBar.addAction(loadAction)
-        toolBar.addAction(viewAction)
         exitAction = QAction("E&xit", self, shortcut="Ctrl+Q", triggered=self.close)
         fileMenu.addAction(exitAction)
-
-        # (1.2) Definimos About
+        # (1.2) About
         aboutMenu = self.menuBar().addMenu("&About")
         aboutQtAct = QAction("About &Qt", self, triggered=qApp.aboutQt)
         aboutMenu.addAction(aboutQtAct)
         self.axWidget = QAxWidget()
         self.setCentralWidget(self.axWidget)
 
-        # (2) Definimos barra de control y tabla
-        # Central widget
-        self._main = QWidget()
-        self.setCentralWidget(self._main)
+        # (2) BARRA DE HERRAMIENTAS
+        toolBar = QToolBar()
+        self.addToolBar(toolBar)
+        # Barra de botones
+        loadAction = QAction("Load...", self, shortcut="Ctrl+L", triggered=self.load)
+        viewAction = QAction('View', self, shortcut="Ctrl+V", triggered=self.view)
+        surfacesAction = QAction('Surfaces', self, shortcut="Ctrl+S", triggered=self.surfaces)
+        # bodiesAction = QAction('Bodies', self, shortcut="Ctrl+B", triggered=self.bodies)
+        # Agregamos las acciones
+        toolBar.addAction(loadAction)
+        toolBar.addAction(surfacesAction)
+        toolBar.addAction(bodiesAction)
+        toolBar.addAction(viewAction)
 
-        self.__SurfaceLayout_Config()
-        self.__SurfaceLayout_TableView()
-        self.__BodyLayout_Config()
-        self.__BodyLayout_TableView()
+        self.central_widget = QStackedWidget()
+        self.setCentralWidget(self.central_widget)
 
-        # --------------------------------------------------
-        # # Panel completo
+        # Cargamos las clases y pasamos los datos
+        self.surfaces_widget = SurfacesWidget(self)
+        self.bodies_widget = BodiesWidget(self, self.surfaces_widget.surfacesOfBody)
 
-        layout = QHBoxLayout(self._main)
-        layout.addLayout(self.llayout, 13)
-        layout.addLayout(self.cllayout, 34)
-        layout.addLayout(self.crlayout, 17)
-        layout.addLayout(self.rlayout, 34)
+
 
     def load(self):
         axSelect = QAxSelect(self)
@@ -155,7 +151,44 @@ class MainWindow(QMainWindow):
         if not engine.rootObjects():
             sys.exit(-1)
 
-    # ============= SURFACE-BODY CONFIGURATION ==============
+    def surfaces(self):
+
+        self.central_widget.addWidget(self.surfaces_widget)
+        self.central_widget.setCurrentWidget(self.surfaces_widget)
+
+    def bodies(self):
+
+        self.central_widget.addWidget(self.bodies_widget)
+        self.central_widget.setCurrentWidget(self.bodies_widget)
+
+
+class SurfacesWidget(QWidget):
+
+    def __init__(self, parent=None, data=None):
+        super(SurfacesWidget, self).__init__(parent)
+
+
+        self.__SurfaceLayout_Config()
+        self.__SurfaceLayout_TableView()
+
+        layout_surfaces = QHBoxLayout()
+        layout_surfaces.addLayout(self.llayout, 49)
+        layout_surfaces.addLayout(self.cllayout, 49)
+        self.setLayout(layout_surfaces)
+
+    # Utils Function
+
+    def __convert_str_to_tuple(self, var, type):
+        s = var.split(",")
+        if type == 'int':
+            var = tuple([int(i.lstrip('(').rstrip(')')) for i in s])
+        elif type == 'str':
+            var = tuple([str(i.lstrip('(').rstrip(')')) for i in s])
+        elif type == 'float':
+            var = tuple([float(i.lstrip('(').rstrip(')')) for i in s])
+        return var
+
+    # Surface Configuration
 
     def __SurfaceLayout_Config(self):
 
@@ -202,17 +235,17 @@ class MainWindow(QMainWindow):
         # X
         self._xpos = QDoubleSpinBox()
         self._xpos.setPrefix("xshift: ")
-        self._xpos.setValue(10)
+        self._xpos.setValue(0)
         init_widget(self._xpos, "x-label")
         # Y
         self._ypos = QDoubleSpinBox()
         self._ypos.setPrefix("yshift: ")
-        self._ypos.setValue(10)
+        self._ypos.setValue(0)
         init_widget(self._ypos, "y-label")
         # Z
         self._zpos = QDoubleSpinBox()
         self._zpos.setPrefix("zshift: ")
-        self._zpos.setValue(10)
+        self._zpos.setValue(0)
         init_widget(self._zpos, "z-label")
 
         # # Rotation
@@ -316,8 +349,121 @@ class MainWindow(QMainWindow):
         self.cllayout.addWidget(self.button3)
 
         # (3) Conectamos los botones a las acciones
+        self.button3.clicked.connect(self.formar_body)
 
-        self.button3.clicked.connect(self.__formar_table_body)
+    # Surface functions
+
+    def __add_table_surface(self):
+
+        """ Update the plot with the current input values """
+        xpos = self._xpos.value()
+        ypos = self._ypos.value()
+        zpos = self._zpos.value()
+
+        xrot = self._xrot.value()
+        yrot = self._yrot.value()
+        zrot = self._zrot.value()
+
+        xsca = self._xsca.value()
+        ysca = self._ysca.value()
+        zsca = self._zsca.value()
+
+        surface = str(self._style_surfaces.currentText())
+        indices = surfaces_indices(surface)
+
+
+        num = self.table_surface.rowCount()
+
+        self.table_surface.setRowCount(num+1)
+        self.table_surface.setColumnCount(6)
+        self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
+
+        self.table_surface.setItem(num, 0, QTableWidgetItem(f"S{self.count_surfaces}"))
+        self.table_surface.setItem(num, 1, QTableWidgetItem(f"{surface}"))
+        self.table_surface.setItem(num, 2, QTableWidgetItem(f"{indices}"))
+        self.table_surface.setItem(num, 3, QTableWidgetItem(f"({xpos:.2f},{ypos:.2f},{zpos:.2f})"))
+        self.table_surface.setItem(num, 4, QTableWidgetItem(f"({xrot:.2f},{yrot:.2f},{zrot:.2f})"))
+        self.table_surface.setItem(num, 5, QTableWidgetItem(f"({xsca:.2f},{ysca:.2f},{zsca:.2f})"))
+
+        # Sumamos una superficie mas!
+        self.count_surfaces += 1
+
+    def __quit_table_surface(self):
+        num = self.table_surface.rowCount()
+
+        if num != 0:
+            self.table_surface.removeRow(num+1)
+            self.table_surface.setRowCount(num-1)
+            self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
+            self.count_surfaces -= 1
+
+        elif num == 0:
+            msgBox = QMessageBox()
+            msgBox.setText("No hay superficies para quitar de la tabla.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+    def formar_body(self):
+
+        """ Update the plot with the current input values """
+
+        if self.table_surface.rowCount() != 0:
+
+            self.surfacesOfBody = {}
+            num = self.table_surface.rowCount()
+            for n in range(num):
+
+                self.surfaceID = {}
+                # Extraemos la información de la superficie
+                Id_Surface = self.table_surface.item(n, 0).text()
+                Ty_Surface = self.table_surface.item(n, 1).text()
+                In_Surface = self.table_surface.item(n, 2).text()
+                Ps_Surface = self.table_surface.item(n, 3).text()
+                Rt_Surface = self.table_surface.item(n, 4).text()
+                Sc_Surface = self.table_surface.item(n, 5).text()
+
+                In_Surface = self.__convert_str_to_tuple(In_Surface, type='int')
+                Ps_Surface = self.__convert_str_to_tuple(Ps_Surface, type='float')
+                Rt_Surface = self.__convert_str_to_tuple(Rt_Surface, type='float')
+                Sc_Surface = self.__convert_str_to_tuple(Sc_Surface, type='float')
+
+                self.surfaceID['Type'] = Ty_Surface
+                self.surfaceID['Label'] = Id_Surface
+                self.surfaceID['Indices'] = In_Surface
+                self.surfaceID['Position'] = Ps_Surface
+                self.surfaceID['Rotation'] = Rt_Surface
+                self.surfaceID['Scale'] = Sc_Surface
+
+                self.surfacesOfBody['{}'.format(Id_Surface)] = self.surfaceID
+
+            # Quitamos los datos de la tabla surface
+            self.table_surface.setRowCount(0)
+
+            return self.surfacesOfBody
+
+
+        elif self.table_surface.rowCount() == 0:
+            msgBox = QMessageBox()
+            msgBox.setText("No hay superficies previamente agregadas.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+
+            return print("Error")
+
+class BodiesWidget(QWidget):
+
+    def __init__(self, parent=None, data):
+        super(BodiesWidget, self).__init__(parent)
+
+        self.__BodyLayout_Config()
+        self.__BodyLayout_TableView()
+
+        layout_bodies = QHBoxLayout()
+        layout_bodies.addLayout(self.crlayout, 49)
+        layout_bodies.addLayout(self.rlayout, 49)
+        self.setLayout(layout_bodies)
+
+    # ============= BODIES CONFIGURATION ==============
 
     def __BodyLayout_Config(self):
 
@@ -453,63 +599,8 @@ class MainWindow(QMainWindow):
         self.button6.clicked.connect(self.__add_table_group)
         self.button7.clicked.connect(self.__quit_table_group)
         self.button8.clicked.connect(self.view_plotly)
-        self.button9.clicked.connect(self.view)
+        # self.button9.clicked.connect(self.view)
         self.button10.clicked.connect(self.__GetGeometryInput)
-
-
-    # ============= FUNCTIONS =================
-
-    # Surface functions
-
-    def __add_table_surface(self):
-
-        """ Update the plot with the current input values """
-        xpos = self._xpos.value()
-        ypos = self._ypos.value()
-        zpos = self._zpos.value()
-
-        xrot = self._xrot.value()
-        yrot = self._yrot.value()
-        zrot = self._zrot.value()
-
-        xsca = self._xsca.value()
-        ysca = self._ysca.value()
-        zsca = self._zsca.value()
-
-        surface = str(self._style_surfaces.currentText())
-        indices = surfaces_indices(surface)
-
-
-        num = self.table_surface.rowCount()
-
-        self.table_surface.setRowCount(num+1)
-        self.table_surface.setColumnCount(6)
-        self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
-
-        self.table_surface.setItem(num, 0, QTableWidgetItem(f"S{self.count_surfaces}"))
-        self.table_surface.setItem(num, 1, QTableWidgetItem(f"{surface}"))
-        self.table_surface.setItem(num, 2, QTableWidgetItem(f"{indices}"))
-        self.table_surface.setItem(num, 3, QTableWidgetItem(f"({xpos:.2f},{ypos:.2f},{zpos:.2f})"))
-        self.table_surface.setItem(num, 4, QTableWidgetItem(f"({xrot:.2f},{yrot:.2f},{zrot:.2f})"))
-        self.table_surface.setItem(num, 5, QTableWidgetItem(f"({xsca:.2f},{ysca:.2f},{zsca:.2f})"))
-
-        # Sumamos una superficie mas!
-        self.count_surfaces += 1
-
-    def __quit_table_surface(self):
-        num = self.table_surface.rowCount()
-
-        if num != 0:
-            self.table_surface.removeRow(num+1)
-            self.table_surface.setRowCount(num-1)
-            self.table_surface.setHorizontalHeaderLabels(self.column_names_surface)
-            self.count_surfaces -= 1
-
-        elif num == 0:
-            msgBox = QMessageBox()
-            msgBox.setText("No hay superficies para quitar de la tabla.")
-            msgBox.setStandardButtons(QMessageBox.Cancel)
-            ret = msgBox.exec()
 
     # Bodys functions
 
@@ -523,7 +614,7 @@ class MainWindow(QMainWindow):
             var = tuple([float(i.lstrip('(').rstrip(')')) for i in s])
         return var
 
-    def __formar_table_body(self):
+    def _formar_table_body(self, data_surface):
 
         """ Update the plot with the current input values """
 
@@ -1028,6 +1119,10 @@ class MainWindow(QMainWindow):
 
     def Get3DView(self):
         print(' ')
+
+
+
+
 
 if __name__ == "__main__":
     # app = QGuiApplication(sys.argv)
