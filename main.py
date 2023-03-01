@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         loadAction = QAction("Load...", self, shortcut="Ctrl+L", triggered=self.load)
         viewAction = QAction('View', self, shortcut="Ctrl+V", triggered=self.view)
         surfacesAction = QAction('Surfaces', self, shortcut="Ctrl+S", triggered=self.surfaces)
-        # bodiesAction = QAction('Bodies', self, shortcut="Ctrl+B", triggered=self.bodies)
+        bodiesAction = QAction('Bodies', self, shortcut="Ctrl+B", triggered=self.bodies)
         # Agregamos las acciones
         toolBar.addAction(loadAction)
         toolBar.addAction(surfacesAction)
@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
 
         # Cargamos las clases y pasamos los datos
         self.surfaces_widget = SurfacesWidget(self)
-        self.bodies_widget = BodiesWidget(self, self.surfaces_widget.surfacesOfBody)
+        self.bodies_widget = BodiesWidget(self)
 
 
 
@@ -452,7 +452,7 @@ class SurfacesWidget(QWidget):
 
 class BodiesWidget(QWidget):
 
-    def __init__(self, parent=None, data):
+    def __init__(self, parent=None, data=None):
         super(BodiesWidget, self).__init__(parent)
 
         self.__BodyLayout_Config()
