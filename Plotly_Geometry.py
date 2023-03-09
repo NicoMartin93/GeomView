@@ -224,17 +224,21 @@ class LoadDataFileGeometry():
                 blocks_limits.append([i,i])
 
         # --- Separamos los bloques de SURFACES de los otros
+        blocks_surfaces_complete = []
         blocks_surfaces = []
         blocks_bodys = []
         for i, block in enumerate(blocks_limits):
             for line in string_list[block[0]:block[1]]:
                 if line.startswith('SURFACE'):
+                    num_surface = int(line.split(')')[0].split('(')[-1])
                     blocks_surfaces.append(block)
+                    blocks_surfaces_complete.append([num_surface, block])
                     break
                 if line.startswith('BODY') or line.startswith('MODULE'):
                     blocks_bodys.append(block)
                     break
 
+        self.blocks_surfaces_complete = blocks_surfaces_complete
         self.blocks_surfaces = blocks_surfaces
         self.blocks_bodys = blocks_bodys
 
@@ -584,8 +588,10 @@ class TransformGeometry():
             respuesta =  option_list(data_module[:,1], input_type='int', question='¿Que MODULE desea repetir?', return_type=False)
             num_module = int(data_module[respuesta,0])
 
-            list_detect = list(np.arange(1,13,1))
-            num_detect =  option_list(list_detect, input_type='int', question='¿Cuantos desea agregar?', return_type=True)
+            # list_detect = list(np.arange(1,13,1))
+            # num_detect =  option_list(list_detect, input_type='int', question='¿Cuantos desea agregar?', return_type=True)
+            num_detect = 12
+            # self.__circle_radius(geom, radius, plane, detect, target)
 
             # Extraemos los datos
             # detector = self.GetDataBody[num_module]
@@ -625,72 +631,15 @@ class TransformGeometry():
                 zp = data_target['ZSH'][0]
                 vpos_new_detect = np.array([xp,yp,zp])
 
-                print('N={}'.format(n))
-                print('({})'.format(v_translate))
                 X_shift = vpos_target[0] - vpos_new_detect[0]
                 Y_shift = vpos_target[1] - vpos_new_detect[1]
                 Z_shift = vpos_new_detect[2] - vpos_target[2]
-                # X_shift = vpos_new_detect[0] + vpos_target[0]
-                # Y_shift = vpos_new_detect[1] + vpos_target[0]
-                # Z_shift = vpos_new_detect[2]
-                #
-                # X_shift = 0.0
-                # Y_shift = 0.0
-                # Z_shift = 0.0
-                # x0 = vpos_target[0]
-                # y0 = vpos_target[1]
-                # z0 = vpos_target[2]
-                #
-                # # Definir la matriz de transformación de traslación T
-                # T = np.array([[1, 0, 0, -x0],
-                #               [0, 1, 0, -y0],
-                #               [0, 0, 1, -z0],
-                #               [0, 0, 0, 1]])
-                #
-                # # Definir la matriz de rotación R
-                # theta = angle
-                # R = np.array([[np.cos(theta), 0, np.sin(theta), 0],
-                #                 [0, 1, 0, 0],
-                #                 [-np.sin(theta), 0, np.cos(theta), 0],
-                #                 [0, 0, 0, 1]])
-                #
-                # # # Definir el vector de traslación
-                # # vector_traslacion = np.array([[1, 0, 0, 0],
-                # #                               [0, 1, 0, 0],
-                # #                               [0, 0, 1, 0],
-                # #                               [-5, 0, 0, 1]])
-                #
-                # # Calcular la matriz de transformación compuesta M
-                # M = np.matmul(R, T)
-                #
-                # # Calcular los coeficientes del plano transformado
-                # A_new, B_new, C_new, D_new = np.matmul([1, 0, 0, 0], M)
-                # #
-                # # # Verificar que el plano resultante esté orientado hacia el centro de la circunferencia
-                # normal_vector = np.array([A_new, B_new, C_new])
-                # center_vector = np.array([x0, y0, z0])
-                # if np.dot(normal_vector, center_vector) > 0:
-                #     A_new *= -1
-                #     B_new *= -1
-                #     C_new *= -1
-                #     D_new *= -1
-
 
                 # Angulos
                 omega = 0
                 theta = 0
                 phi = angle*n*180/np.pi
 
-                # block_text = ["CLONE   (   {})  Detector {} - Prism".format(num+n, n+2),
-                #               "MODULE  (   {})".format(num_module),
-                #               "1111111111111111111111111111111111111111111111111111111111111111",
-                #               "  OMEGA=( {},   0)".format(self.__converttotext(omega)),
-                #               "  THETA=( {},   0)".format(self.__converttotext(theta)),
-                #               "    PHI=( {},   0)".format(self.__converttotext(phi)),
-                #               "X-SHIFT=( {},   0)".format(self.__converttotext(X_shift)),
-                #               "Y-SHIFT=( {},   0)".format(self.__converttotext(Y_shift)),
-                #               "Z-SHIFT=( {},   0)".format(self.__converttotext(Z_shift)),
-                #               "0000000000000000000000000000000000000000000000000000000000000000"]
                 nb = num+n+1
                 if nb < 10:
                     line_clone = "CLONE   (   {})  Detector {} - Prism".format(num+n+1, n+2)
@@ -845,23 +794,14 @@ class TransformGeometry():
                     new_string.append(bloque+'\n')
             # ----
 
-
-
         new_string.append(string_list[block[1]+1])
 
-        pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector.geo')
+        pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_original_1.geo')
 
         my_file = open('{}'.format(pathfile),'w')
         new_file_contents = "".join(new_string)
         my_file.write(new_file_contents)
         my_file.close()
-
-        # --------------------------------------------------------------------------
-        # Preguntamos cual se quiere modificar
-
-
-        self.__get_data_main()
-
 
     def modify_ticknness(self, surface, change):
 
@@ -891,245 +831,268 @@ class TransformGeometry():
         my_file.write(new_file_contents)
         my_file.close()
 
+    def __circle_radius(self, geom, radius, plane, detect, target):
+
+        string_list = geom.string_list
+        for num in range(geom.numBodys):
+            nbody = geom.GetDataBody[num+1]
+            if nbody['Name'].startswith('Detector'):
+                body_detect = nbody
+            if nbody['Name'].startswith('Target'):
+                body_target = nbody
+
+        if detect:
+            print('Detect')
+            if plane == 'XZ':
+                print('Plane XZ')
+                for ds in body_detect['Data Surfaces'].keys():
+                    surface_body = body_detect['Data Surfaces'][ds]
+
+                    # Eje Z
+                    sb = surface_body['SURFACE'][0]
+                    if sb == 1:
+                        if surface_body['AZ'] != []:
+                            surface_body['A0'] = - 0.25
+
+                            # Modificamos el archivo con el nuevo valor.
+                            sblocks = geom.blocks_surfaces_complete[sb-1]
+                            if sblocks[0] == sb:
+                                blocks = sblocks[1]
+                                for l in range(blocks[0],blocks[1]):
+
+                                    if string_list[l].startswith('Z-SHIFT'):
+                                        string_list[l] = 'Z-SHIFT=({},   0)\n'.format(__converttotext(surface_body['A0']))
+                                        print('Plane 1')
+
+                    if sb == 2:
+                        if surface_body['AZ'] != []:
+                            surface_body['A0'] = 0.25
+
+                            # Modificamos el archivo con el nuevo valor.
+                            sblocks = geom.blocks_surfaces_complete[sb-1]
+                            if sblocks[0] == sb:
+                                blocks = sblocks[1]
+                                for l in range(blocks[0],blocks[1]):
+
+                                    if string_list[l].startswith('Z-SHIFT'):
+                                        string_list[l] = 'Z-SHIFT=({},   0)\n'.format(__converttotext(surface_body['A0']))
+                                        print('Plane 2')
+                    # Eje X
+                    if sb == 3:
+                        if surface_body['AX'] != []:
+                            surface_body['A0'] = -radius + 0.25
+
+                            # Modificamos el archivo con el nuevo valor.
+                            sblocks = geom.blocks_surfaces_complete[sb-1]
+                            if sblocks[0] == sb:
+                                blocks = sblocks[1]
+                                for l in range(blocks[0],blocks[1]):
+
+                                    if string_list[l].startswith('     A0='):
+                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
+                                        print('Plane 3')
+
+                    if sb == 4:
+                        if surface_body['AX'] != []:
+                            surface_body['A0'] = -radius - 0.25
+
+                            # Modificamos el archivo con el nuevo valor.
+                            sblocks = geom.blocks_surfaces_complete[sb-1]
+                            if sblocks[0] == sb:
+                                blocks = sblocks[1]
+                                for l in range(blocks[0],blocks[1]):
+
+                                    if string_list[l].startswith('     A0='):
+                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
+                                        print('Plane 4')
+
+                    # Eje Y
+                    if sb == 5:
+                        if surface_body['AY'] != []:
+                            surface_body['A0'] = -radius + 0.05
+
+                            # Modificamos el archivo con el nuevo valor.
+                            sblocks = geom.blocks_surfaces_complete[sb-1]
+                            if sblocks[0] == sb:
+                                blocks = sblocks[1]
+                                for l in range(blocks[0],blocks[1]):
+
+                                    if string_list[l].startswith('     A0='):
+                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
+                                        print('Plane 5')
+
+                    if sb == 6:
+                        if surface_body['AY'] != []:
+                            surface_body['A0'] = -radius - 0.05
+
+                            # Modificamos el archivo con el nuevo valor.
+                            sblocks = geom.blocks_surfaces_complete[sb-1]
+                            if sblocks[0] == sb:
+                                blocks = sblocks[1]
+                                for l in range(blocks[0],blocks[1]):
+                                    print(l)
+                                    if string_list[l].startswith('     A0='):
+                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
+                                        print('Plane 6')
+
+            if plane == 'YZ':
+
+                for ds in body_detect['Data Surfaces'].keys():
+                    surface_body = body_detect['Data Surfaces'][ds]
+                    # Eje Z
+                    if surface_body['SURFACE'][0] == 1:
+                        if surface_body['AZ'] != []:
+                            surface_body['A0'] = - 0.25
+                    if surface_body['SURFACE'][0] == 2:
+                        if surface_body['AZ'] != []:
+                            surface_body['A0'] = 0.25
+                    # Eje X
+                    if surface_body['SURFACE'][0] == 3:
+                        if surface_body['AX'] != []:
+                            surface_body['A0'] = radius - 0.05
+                    if surface_body['SURFACE'][0] == 4:
+                        if surface_body['AX'] != []:
+                            surface_body['A0'] = radius + 0.05
+                    # Eje Y
+                    if surface_body['SURFACE'][0] == 5:
+                        if surface_body['AY'] != []:
+                            surface_body['A0'] = radius - 0.25
+                    if surface_body['SURFACE'][0] == 6:
+                        if surface_body['AY'] != []:
+                            surface_body['A0'] = radius + 0.25
+
+            if plane == 'XY':
+                print('Continuara....')
+
+        if target:
+
+            print('Continuara.....')
+
+        pathfile = os.path.join('D:\\', *path.split('\\')[1:-1], 'detector_1.geo')
+        my_file = open('{}'.format(pathfile),'w')
+        new_file_contents = "".join(string_list)
+        my_file.write(new_file_contents)
+        my_file.close()
+
+class CircleDetectors():
+
+    def __init__(self, pathfolder):
+        # # Instance Variable
+        geom = LoadDataFileGeometry(pathfolder)
+
+        materials = np.array([[1,'Cdte']])
+        path = geom.path
+
+        # Generamos la visualizacion
+        nplanes = int(input('Ingrese número de detectores: '))
+        radio = int(input('Ingrese el radio del cinturon: '))
+        self.ViewPlanes(nplanes, radio)
+
+        # Generamos el INPUT
+        self.ConstructInput(nplanes, materials, radio, path)
+
+    def PutTogetherPlanes(self, plane, alpha, radio):
+
+        # Definimos el plano
+        if plane == 'XY':
+            vplane = np.array([0,0,1])
+
+            # Definir el angulo
+            angle = alpha * np.pi/180
+            # Definimos el vector normal al plano del paralepipedo
+            vnorm_x = np.cos(angle)
+            vnorm_y = np.sin(angle)
+            vnorm_z = 0
+            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
+            # vp1 = vp1/np.linalg.norm(vp1)
+
+            # Definimos un vector perpendicular al plano y al plano del paralepipedo
+            vp2 = np.cross(vplane,vp1)
+            vp2 = vp2/np.linalg.norm(vp2)
+
+            # Definimos otro vector perpendicular
+            vp3 = np.cross(vp1,vp2)
+            vp3 = vp3/np.linalg.norm(vp3)
+
+            # Multiplicamos los vectores para que tengan las dimensiones del detectors
+            vp1 = vp1 * 0.1    # (cm)
+            vp2 = vp2 * 0.5    # (cm)
+            vp3 = vp3 * 0.5    # (cm)
+            vp4 = vp1 + vp2
+            vp5 = vp1 + vp3
+            vp6 = vp2 + vp3
+            vp7 = vp1 + vp2 + vp3
+            vp8 = np.array([0.0,0.0,0.0])
+
+            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
+            # Traslada los vértices al centro de coordenadas
+            vp_mean = np.mean(vp, axis=0)
+            vp = vp - vp_mean
+
+            vp = vp + vp1/np.linalg.norm(vp1) * radio
+            # vp = vp - np.array([radio,radio,0])
+            Z = vp
+
+            # Los dos primeros --> X
+            # Los dos segundos --> Y
+            # Los dos ultimos --> Z
+
+            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
+            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
+            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
+            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
+            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
+            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
+
+            verts = [[Z[5],Z[1],Z[7],Z[2]],
+                     [Z[6],Z[3],Z[0],Z[4]],
+                     [Z[3],Z[1],Z[5],Z[6]],
+                     [Z[0],Z[7],Z[2],Z[4]],
+                     [Z[2],Z[4],Z[6],Z[5]],
+                     [Z[7],Z[0],Z[3],Z[1]]]
+
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111, projection='3d')
+            #
+            # ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
+            # ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
+            # ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
+            # ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
+            # ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
+            # ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
+            # ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
+            # ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
+            # ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
+            # ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
+            # ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
+            # ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
+            # ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
+            # ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
+            # ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
+            # ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
+            #
+            # bbox = Poly3DCollection(verts,
+            # facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
+            # bbox._facecolors2d= bbox._facecolor3d
+            # bbox._edgecolors2d = bbox._edgecolor3d
+            # ax.add_collection3d(bbox)
+            #
+            # ax.set_xlabel('Eje X [cm]')
+            # ax.set_ylabel('Eje Y [cm]')
+            # ax.set_zlabel('Eje Z [cm]')
+            #
+            # plt.show()
+
+            return Z, verts
+
+    def ViewPlanes(self, nplanes, radio):
+
+        angle = 360/nplanes
+        list_bodys = []
+        for n in range(1,nplanes):
+
+            Z, verts =  self.PutTogetherPlanes(plane = 'XY', alpha = angle*n, radio=radio)
 
-
-def extract_geometric_vertices_from_detector(data, several_elements=True):
-
-    def data_for_cylinder(data_list,radius):
-
-        if len(data_list[0]) != 1:
-            center_y = data_list[1][0]
-            center_z = data_list[2][0]
-
-            x = np.linspace(data_list[0][0], data_list[0][1], 50)
-            theta = np.linspace(0, 2*np.pi, 50)
-            theta_grid, x_grid=np.meshgrid(theta, x)
-            y_grid = radius*np.cos(theta_grid) + center_y
-            z_grid = radius*np.sin(theta_grid) + center_z
-
-            # Vector director del eje.
-            p0 = np.array([data_list[0][0],data_list[1][0],data_list[2][0]])
-            p1 = np.array([data_list[0][1],data_list[1][0],data_list[2][0]])
-            v = p1 - p0
-            # Calculamos la magnitud del vector.
-            mag = np.linalg.norm(v)
-            # Vector unitario en la direccion del eje.
-            v = v / mag
-            # Otro vector con distinta direccion
-            not_v = np.array([0, 1, 0])
-            # Vector perpendicular a v
-            n1 = np.cross(v, not_v)
-            # Normalizamos n1
-            n1 /= np.linalg.norm(n1)
-
-            # Vector unitario perpendicular a v y n1
-            n2 = np.cross(v, n1)
-
-            rsample = np.linspace(0, radius, 2)
-            rsample,theta = np.meshgrid(rsample, theta)
-
-            # "Bottom"
-            tapa_1 = [p0[i] + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
-
-            # "Top"
-            tapa_2 = [p0[i] + v[i]*mag + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
-
-        if len(data_list[1]) != 1:
-            center_x = data_list[0][0]
-            center_z = data_list[2][0]
-
-            y = np.linspace(data_list[1][0], data_list[1][1], 50)
-            theta = np.linspace(0, 2*np.pi, 50)
-            theta_grid, y_grid=np.meshgrid(theta, y)
-            x_grid = radius*np.cos(theta_grid) + center_x
-            z_grid = radius*np.sin(theta_grid) + center_z
-
-        if len(data_list[1]) != 1:
-            center_x = data_list[0][0]
-            center_y = data_list[1][0]
-
-            z = np.linspace(data_list[2][0], data_list[2][1], 50)
-            theta = np.linspace(0, 2*np.pi, 50)
-            theta_grid, z_grid=np.meshgrid(theta, z)
-            x_grid = radius*np.cos(theta_grid) + center_x
-            y_grid = radius*np.sin(theta_grid) + center_y
-
-        return x_grid,y_grid,z_grid,tapa_1,tapa_2
-
-    def data_for_prism(data_list):
-        vertex_coord = list(itertools.product(*data_list))
-        points = np.array(vertex_coord)
-        matrix = [[1,0,0],[0,1,0],[0,0,1]]
-        Z = np.zeros((8,3))
-        for i in range(len(points)):
-            Z[i,:] = np.dot(points[i,:],matrix)
-        # Lista de las caras del poligono que forma el detector.
-        verts = [[Z[0],Z[1],Z[3],Z[2]],
-                 [Z[3],Z[2],Z[6],Z[7]],
-                 [Z[6],Z[7],Z[5],Z[4]],
-                 [Z[5],Z[4],Z[0],Z[1]],
-                 [Z[1],Z[3],Z[7],Z[5]],
-                 [Z[0],Z[2],Z[6],Z[4]]]
-        return Z, verts
-
-    def data_for_sphere(data_list, r):
-
-        # if not data_list:
-
-        center_x = data_list[0][0]
-        center_y = data_list[1][0]
-        center_z = data_list[2][0]
-
-        resolution = 100
-        u, v = np.mgrid[0:2*np.pi:resolution*2j, -np.pi:np.pi:resolution*1j]
-        # u = np.linspace(0, 2 * np.pi, 100)
-        # v = np.linspace(0, np.pi, 100)
-
-        x = r*3* np.cos(u)* np.sin(v) + center_x
-        y = r*3* np.sin(u)* np.sin(v) + center_y
-        z = r*3* np.cos(v) + center_z
-
-        return x,y,z
-
-    # --------------------------------------------------------------------------
-    # (1) Ubicamos el archivo al cual vamos extraer los datos
-    dict_mat = {k:[] for k in ['AXX','AXY','AXZ','AYY','AYZ','AZZ']}
-    dict_pos = {k:[] for k in ['AX','AY','AZ']}
-    dict_shi =  {k:[] for k in ['XSH','YSH','ZSH']}
-    dict_rad = {k:[] for k in ['XSC','YSC','ZSC']}
-
-    surface = data['Data Surfaces']
-    for num in surface.keys():
-        if surface[num]['AX'] != []:
-            if surface[num]['A0'] != []:
-                dict_pos['AX'].append(surface[num]['A0'][0])
-            else:
-                dict_pos['AX'].append(surface[num]['AX'][0])
-
-        if surface[num]['AY'] != []:
-            if surface[num]['A0'] != []:
-                dict_pos['AY'].append(surface[num]['A0'][0])
-            else:
-                dict_pos['AY'].append(surface[num]['AY'][0])
-
-        if surface[num]['AZ'] != []:
-            if surface[num]['A0'] != []:
-                dict_pos['AZ'].append(surface[num]['A0'][0])
-            else:
-                dict_pos['AZ'].append(surface[num]['AZ'][0])
-
-        if surface[num]['XSC'] != []:
-            dict_rad['XSC'].append(surface[num]['XSC'][0])
-        if surface[num]['YSC'] != []:
-            dict_rad['YSC'].append(surface[num]['YSC'][0])
-        if surface[num]['ZSC'] != []:
-            dict_rad['ZSC'].append(surface[num]['ZSC'][0])
-
-        if surface[num]['XSH'] != []:
-            dict_pos['AX'].append(surface[num]['XSH'][0])
-        if surface[num]['YSH'] != []:
-            dict_pos['AY'].append(surface[num]['YSH'][0])
-        if surface[num]['ZSH'] != []:
-            dict_pos['AZ'].append(surface[num]['ZSH'][0])
-
-    type_body = data['Geometry']
-
-    # --- Ordenamos las coordenadas de menor a mayor para la posiciones
-    dict_pos['AX'].sort()
-    dict_pos['AY'].sort()
-    dict_pos['AZ'].sort()
-
-    data_list = []
-    data_list.append(dict_pos['AX'])
-    data_list.append(dict_pos['AY'])
-    data_list.append(dict_pos['AZ'])
-    # print(data_list)
-
-    if type_body == 'Cylinder':
-
-        rad_list = []
-        rad_list.append(dict_rad['XSC'])
-        rad_list.append(dict_rad['YSC'])
-        rad_list.append(dict_rad['ZSC'])
-
-        if len(rad_list[0]) == 1:
-            R = rad_list[0][0]
-        if len(rad_list[1]) == 1:
-            R = rad_list[1][0]
-        if len(rad_list[2]) == 1:
-            R = rad_list[2][0]
-
-        data_graph = data_for_cylinder(data_list,R)
-
-        if len(data_list[0]) != 1:
-            vdir = data_list[0]
-        if len(data_list[1]) != 1:
-            vdir = data_list[1]
-        if len(data_list[2]) != 1:
-            vdir = data_list[2]
-
-        return data_graph, type_body
-
-    elif type_body == 'Prism':
-
-        data_graph = data_for_prism(data_list)
-        return data_graph, type_body
-
-    elif type_body == 'Sphere':
-
-        rad_list = []
-        rad_list.append(dict_rad['XSC'])
-        rad_list.append(dict_rad['YSC'])
-        rad_list.append(dict_rad['ZSC'])
-
-        # print(rad_list)
-
-        if len(rad_list[0]) == 1:
-            R = rad_list[0][0]
-        if len(rad_list[1]) == 1:
-            R = rad_list[1][0]
-        if len(rad_list[2]) == 1:
-            R = rad_list[2][0]
-
-        # print(R)
-
-        data_graph = data_for_sphere(data_list,R)
-
-        return data_graph, type_body
-
-
-
-
-
-
-
-
-pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-
-# pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\Imaging_XFCT_microCT\Code\RUN\penmain_2018"
-# pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-geom = LoadData_Geometry(pathfolder)
-
-bodysName = [geom.BodysNames]
-num_bodys = 1
-
-print_list_columns(geom.BodysNames, cols=2)
-print('\n')
-
-list_num = geom.GetDataBody.keys()
-
-
-
-list_bodys = []
-for i in list(list_num):
-
-        # respuesta = option_list(answer_list=geom.BodysNames, input_type='int', question='¿Que objeto desea agregar?', return_type=True, print_list=False)
-        dbody = geom.GetDataBody[i]
-
-        data_graph, type_body = extract_geometric_vertices_from_detector(dbody)
-
-        if type_body == 'Prism':
-            Z, verts = data_graph
             x = Z[:,0]
             y = Z[:,1]
             z = Z[:,2]
@@ -1143,63 +1106,599 @@ for i in list(list_num):
                                         opacity=0.5,
                                         color='blue'))
 
+        # Datos para el eje x
+        list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
 
-        if type_body == 'Cylinder':
+        # Datos para el eje y
+        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
 
-            # Extraemos los datos del cilindro
-            Xc,Yc,Zc,tapa_1,tapa_2 = data_graph
-            X1,Y1,Z1 = tapa_1
-            X2,Y2,Z2 = tapa_2
-
-            colorscale = [[0, 'blue'],
-                        [1, 'blue']]
-
-            # Superficie del cilindro
-            list_bodys.append(go.Surface(x=Xc, y=Yc, z=Zc,
-                             colorscale = colorscale,
-                             showscale=False,
-                             opacity=0.5))
-
-            # Superficie circulares
-            list_bodys.append(go.Surface(x=X1, y=Y1, z=Z1,
-                             colorscale = colorscale,
-                             showscale=False,
-                             opacity=0.5))
-
-            list_bodys.append(go.Surface(x=X2, y=Y2, z=Z2,
-                             colorscale = colorscale,
-                             showscale=False,
-                             opacity=0.5))
-
-            # # Superficie circulares
-            # list_bodys.append(go.Scatter3d(x = X1.tolist()+[None]+X2.tolist(),
-            #                         y = Y1.tolist()+[None]+Y2.tolist(),
-            #                         z = Z1.tolist()+[None]+Z2.tolist(),
-            #                         # mode ='lines',
-            #                         line = dict(color='blue', width=2),
-            #                         opacity =0.55, showlegend=True))
+        # Datos para el eje z
+        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
 
 
-        if type_body == 'Sphere':
-            x,y,z = data_graph
-            colorscale = [[0, 'blue'],
-                          [1, 'blue']]
-            list_bodys.append(go.Surface(x=x, y=y, z=z,
-                             colorscale = colorscale,
-                             showscale=False,
-                             opacity=0.5))
+        layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
+        # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
+        #                   scene = dict(xaxis=dict(range=[-10,10]),
+        #                                yaxis=dict(range=[-10,10]),
+        #                                zaxis=dict(range=[-10,10])))
+
+        fig = go.Figure(data = list_bodys, layout = layout)
+        # fig.update_layout(scene_camera_eye_z= 0.55)
+        fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
+
+        fig.show()
+
+    # Crear INPUT con el cinturon de detectores
+    def converttotext(self, c):
+        if c > 0:
+            num_str = '{:.7f}'.format(c)
+            numtxt = len('0.000000000000000')
+            format = 'E+00'
+            if len(num_str) != numtxt:
+                cantidad = numtxt - len(num_str)
+                for i in range(cantidad):
+                    num_str = num_str + '0'
+            num_str = '+' + num_str + format
+            return num_str
+        elif c < 0:
+            num_str = '{:.7f}'.format(c)
+            numtxt = len('0.000000000000000')
+            format = 'E+00'
+            if len(num_str) != numtxt:
+                cantidad = numtxt - len(num_str)
+                for i in range(cantidad+1):
+                    num_str = num_str + '0'
+            num_str = num_str + format
+            return num_str
+        else:
+            num_str = '{:.7f}'.format(c)
+            numtxt = len('0.000000000000000')
+            format = 'E+00'
+            if len(num_str) != numtxt:
+                cantidad = numtxt - len(num_str)
+                for i in range(cantidad):
+                    num_str = num_str + '0'
+            num_str = '+' + num_str + format
+            return num_str
+
+    def GetPlaneCoefficient(self,p1,p2,p3,p4):
+
+        # Encontramos dos vectores del plano.
+        v1 = p1 - p2
+        v2 = p3 - p2
+        v3 = p4 - p2
+        # Calculamos el vector normal del plano
+        normal = np.cross(v2,v3)
+        normal /= np.linalg.norm(normal)
+
+        # Calcular la distancia del plano al origen
+        d = -np.dot(normal,p1)
+
+        a = normal[0]
+        b = normal[1]
+        c = normal[2]
+
+        return a,b,c,d
+
+    def ConstructInput(self, nplanes, materials, radio, path):
+
+        # # Creamos una lista que contenga el script de INPUT
+        string_list = []
+
+        # (1) Agregamos el titulo al INPUT -----------------------------------------
+
+        title = ["XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
+                 "Detector XR --> Definimos las superficies limitantes.\n",
+                 "Materiales:\n",
+        	     "  - 0 -> Vacio -> Hueco\n",
+                 "  - 1 -> {} -> Detector\n".format(materials[0,1]),
+                 "\n",
+                 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
+                 "0000000000000000000000000000000000000000000000000000000000000000\n"]
+
+        for line in title:
+            string_list.append(line)
+
+        # (2) Creamos las superficies y los bodys para los detectores---------------
+
+        # Definimos unidad angular de partición
+        angle = 360/nplanes
+        j=0
+        for n in range(1,nplanes):
+
+            Z, verts =  self.PutTogetherPlanes(plane = 'XY', alpha = n*angle, radio=radio)
+
+            i_detector = ["C\n",
+                          "C  **** Detector {}\n".format(n),
+                          "C\n",
+                          ]
+
+            for line in i_detector:
+                string_list.append(line)
+
+            for i,vert in enumerate(verts):
+                p1,p2,p3,p4 = vert
+                a,b,c,d = self.GetPlaneCoefficient(p1,p2,p3,p4)
+                print(a,b,c,d)
+                # Corregimos un error de escritura
+                if a==-0.0:
+                    a=0.0
+                if b==-0.0:
+                    b=0.0
+                if c==-0.0:
+                    c=0.0
+                if d==-0.0:
+                    d=0.0
+
+                # Agregamos el titulo de surface
+                if n+i+j < 10:
+                    string_list.append("SURFACE (   {})   Plano limitante \n".format(n+i+j))
+                if n+i+j < 100 and n+i+j >= 10:
+                    string_list.append("SURFACE (  {})   Plano limitante \n".format(n+i+j))
+                if n+i+j >= 100:
+                    string_list.append("SURFACE ( {})   Plano limitante \n".format(n+i+j))
+
+                if a == 0.0 and b != 0.0 and c != 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AY=({},   0)\n".format(self.converttotext(b)))
+                    string_list.append("     AZ=({},   0)\n".format(self.converttotext(c)))
+                    string_list.append("     A0=({},   0)\n".format(self.converttotext(d)))
+                elif a != 0.0 and b == 0.0 and c != 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AX=({},   0)\n".format(self.converttotext(a)))
+                    string_list.append("     AZ=({},   0)\n".format(self.converttotext(c)))
+                    string_list.append("     A0=({},   0)\n".format(self.converttotext(d)))
+                elif a != 0.0 and b != 0.0 and c == 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AX=({},   0)\n".format(self.converttotext(a)))
+                    string_list.append("     AY=({},   0)\n".format(self.converttotext(b)))
+                    string_list.append("     A0=({},   0)\n".format(self.converttotext(d)))
+                elif a == 0.0 and b == 0.0 and c != 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AZ=({},   0)\n".format(self.converttotext(c)))
+                    string_list.append("     A0=({},   0)\n".format(self.converttotext(d)))
+                elif a != 0.0 and b == 0.0 and c == 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AX=({},   0)\n".format(self.converttotext(a)))
+                    string_list.append("     A0=({},   0)\n".format(self.converttotext(d)))
+                elif a == 0.0 and b != 0.0 and c == 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AY=({},   0)\n".format(self.converttotext(b)))
+                    string_list.append("     A0=({},   0)\n".format(self.converttotext(d)))
+
+                string_list.append("0000000000000000000000000000000000000000000000000000000000000000\n")
 
 
+            if n < 10:
+                string_list.append("BODY    (   {})  Detector {} - Prism\n".format(n,n))
+            elif n>=10 and n<100:
+                string_list.append("BODY    (  {})  Detector {} - Prism\n".format(n,n))
+            elif n>=100:
+                string_list.append("BODY    ( {})  Detector {} - Prism\n".format(n,n))
+
+            string_list.append("MATERIAL(   {})\n".format(materials[0,0]))
+
+            if n+0+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+0+j))
+            elif n+0+j>=10 and n+0+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+0+j))
+            elif n+0+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+0+j))
+
+            if n+1+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+1+j))
+            elif n+1+j>=10 and n+1+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+1+j))
+            elif n+1+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+1+j))
+
+            if n+2+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+2+j))
+            elif n+2+j>=10 and n+2+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+2+j))
+            elif n+2+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+2+j))
+
+            if n+3+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+3+j))
+            elif n+3+j>=10 and n+3+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+3+j))
+            elif n+3+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+3+j))
+
+            if n+4+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+4+j))
+            elif n+4+j>=10 and n+4+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+4+j))
+            elif n+4+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+4+j))
+
+            if n+5+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+5+j))
+            elif n+5+j>=10 and n+5+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+5+j))
+            elif n+5+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+5+j))
+
+            string_list.append("0000000000000000000000000000000000000000000000000000000000000000\n")
+            j += 5
+
+        string_list.append("END      0000000000000000000000000000000000000000000000000000000")
+
+        self.geometryFile = string_list
+
+        pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_simulated.geo')
+
+        my_file = open('{}'.format(pathfile),'w')
+        new_file_contents = "".join(string_list)
+        my_file.write(new_file_contents)
+        my_file.close()
+    # ----
+
+# # PRIMERA FORMA
+pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
+cdetectors = CircleDetectors(pathfolder)
 
 
-layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
-# layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
-#                   scene = dict(xaxis=dict(range=[-10,10]),
-#                                yaxis=dict(range=[-10,10]),
-#                                zaxis=dict(range=[-10,10])))
-
-fig = go.Figure(data = list_bodys, layout = layout)
-# fig.update_layout(scene_camera_eye_z= 0.55)
-fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
-
-fig.show()
+#
+# # # SEGUNDA FORMA
+# def extract_geometric_vertices_from_detector(data, several_elements=True):
+#
+#     def data_for_cylinder(data_list,radius):
+#
+#         if len(data_list[0]) != 1:
+#             center_y = data_list[1][0]
+#             center_z = data_list[2][0]
+#
+#             x = np.linspace(data_list[0][0], data_list[0][1], 50)
+#             theta = np.linspace(0, 2*np.pi, 50)
+#             theta_grid, x_grid=np.meshgrid(theta, x)
+#             y_grid = radius*np.cos(theta_grid) + center_y
+#             z_grid = radius*np.sin(theta_grid) + center_z
+#
+#             # Vector director del eje.
+#             p0 = np.array([data_list[0][0],data_list[1][0],data_list[2][0]])
+#             p1 = np.array([data_list[0][1],data_list[1][0],data_list[2][0]])
+#             v = p1 - p0
+#             # Calculamos la magnitud del vector.
+#             mag = np.linalg.norm(v)
+#             # Vector unitario en la direccion del eje.
+#             v = v / mag
+#             # Otro vector con distinta direccion
+#             not_v = np.array([0, 1, 0])
+#             # Vector perpendicular a v
+#             n1 = np.cross(v, not_v)
+#             # Normalizamos n1
+#             n1 /= np.linalg.norm(n1)
+#
+#             # Vector unitario perpendicular a v y n1
+#             n2 = np.cross(v, n1)
+#
+#             rsample = np.linspace(0, radius, 2)
+#             rsample,theta = np.meshgrid(rsample, theta)
+#
+#             # "Bottom"
+#             tapa_1 = [p0[i] + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
+#
+#             # "Top"
+#             tapa_2 = [p0[i] + v[i]*mag + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
+#
+#         if len(data_list[1]) != 1:
+#             center_x = data_list[0][0]
+#             center_z = data_list[2][0]
+#
+#             y = np.linspace(data_list[1][0], data_list[1][1], 50)
+#             theta = np.linspace(0, 2*np.pi, 50)
+#             theta_grid, y_grid=np.meshgrid(theta, y)
+#             x_grid = radius*np.cos(theta_grid) + center_x
+#             z_grid = radius*np.sin(theta_grid) + center_z
+#
+#         if len(data_list[1]) != 1:
+#             center_x = data_list[0][0]
+#             center_y = data_list[1][0]
+#
+#             z = np.linspace(data_list[2][0], data_list[2][1], 50)
+#             theta = np.linspace(0, 2*np.pi, 50)
+#             theta_grid, z_grid=np.meshgrid(theta, z)
+#             x_grid = radius*np.cos(theta_grid) + center_x
+#             y_grid = radius*np.sin(theta_grid) + center_y
+#
+#         return x_grid,y_grid,z_grid,tapa_1,tapa_2
+#
+#     def data_for_prism(data_list):
+#         vertex_coord = list(itertools.product(*data_list))
+#         points = np.array(vertex_coord)
+#         matrix = [[1,0,0],[0,1,0],[0,0,1]]
+#         Z = np.zeros((8,3))
+#         for i in range(len(points)):
+#             Z[i,:] = np.dot(points[i,:],matrix)
+#         # Lista de las caras del poligono que forma el detector.
+#         verts = [[Z[0],Z[1],Z[3],Z[2]],
+#                  [Z[3],Z[2],Z[6],Z[7]],
+#                  [Z[6],Z[7],Z[5],Z[4]],
+#                  [Z[5],Z[4],Z[0],Z[1]],
+#                  [Z[1],Z[3],Z[7],Z[5]],
+#                  [Z[0],Z[2],Z[6],Z[4]]]
+#         return Z, verts
+#
+#     def data_for_sphere(data_list, r):
+#
+#         # if not data_list:
+#
+#         center_x = data_list[0][0]
+#         center_y = data_list[1][0]
+#         center_z = data_list[2][0]
+#
+#         resolution = 100
+#         u, v = np.mgrid[0:2*np.pi:resolution*2j, -np.pi:np.pi:resolution*1j]
+#         # u = np.linspace(0, 2 * np.pi, 100)
+#         # v = np.linspace(0, np.pi, 100)
+#
+#         x = r*3* np.cos(u)* np.sin(v) + center_x
+#         y = r*3* np.sin(u)* np.sin(v) + center_y
+#         z = r*3* np.cos(v) + center_z
+#
+#         return x,y,z
+#
+#     # --------------------------------------------------------------------------
+#     # (1) Ubicamos el archivo al cual vamos extraer los datos
+#     dict_mat = {k:[] for k in ['AXX','AXY','AXZ','AYY','AYZ','AZZ']}
+#     dict_pos = {k:[] for k in ['AX','AY','AZ']}
+#     dict_shi =  {k:[] for k in ['XSH','YSH','ZSH']}
+#     dict_rad = {k:[] for k in ['XSC','YSC','ZSC']}
+#
+#
+#     surface = data['Data Surfaces']
+#     for num in surface.keys():
+#         if surface[num]['AX'] != []:
+#             if surface[num]['A0'] != []:
+#                 dict_pos['AX'].append(surface[num]['A0'][0])
+#             else:
+#                 dict_pos['AX'].append(surface[num]['AX'][0])
+#
+#         if surface[num]['AY'] != []:
+#             if surface[num]['A0'] != []:
+#                 dict_pos['AY'].append(surface[num]['A0'][0])
+#             else:
+#                 dict_pos['AY'].append(surface[num]['AY'][0])
+#
+#         if surface[num]['AZ'] != []:
+#             if surface[num]['A0'] != []:
+#                 dict_pos['AZ'].append(surface[num]['A0'][0])
+#             else:
+#                 dict_pos['AZ'].append(surface[num]['AZ'][0])
+#
+#         if surface[num]['XSC'] != []:
+#             dict_rad['XSC'].append(surface[num]['XSC'][0])
+#         if surface[num]['YSC'] != []:
+#             dict_rad['YSC'].append(surface[num]['YSC'][0])
+#         if surface[num]['ZSC'] != []:
+#             dict_rad['ZSC'].append(surface[num]['ZSC'][0])
+#
+#         if surface[num]['XSH'] != []:
+#             dict_pos['AX'].append(surface[num]['XSH'][0])
+#         if surface[num]['YSH'] != []:
+#             dict_pos['AY'].append(surface[num]['YSH'][0])
+#         if surface[num]['ZSH'] != []:
+#             dict_pos['AZ'].append(surface[num]['ZSH'][0])
+#
+#     type_body = data['Geometry']
+#
+#     # --- Ordenamos las coordenadas de menor a mayor para la posiciones
+#     dict_pos['AX'].sort()
+#     dict_pos['AY'].sort()
+#     dict_pos['AZ'].sort()
+#
+#
+#     data_list = []
+#     data_list.append(dict_pos['AX'])
+#     data_list.append(dict_pos['AY'])
+#     data_list.append(dict_pos['AZ'])
+#     # print(data_list)
+#
+#     if type_body == 'Cylinder':
+#
+#         rad_list = []
+#         rad_list.append(dict_rad['XSC'])
+#         rad_list.append(dict_rad['YSC'])
+#         rad_list.append(dict_rad['ZSC'])
+#
+#         if len(rad_list[0]) == 1:
+#             R = rad_list[0][0]
+#         if len(rad_list[1]) == 1:
+#             R = rad_list[1][0]
+#         if len(rad_list[2]) == 1:
+#             R = rad_list[2][0]
+#
+#         data_graph = data_for_cylinder(data_list,R)
+#
+#         if len(data_list[0]) != 1:
+#             vdir = data_list[0]
+#         if len(data_list[1]) != 1:
+#             vdir = data_list[1]
+#         if len(data_list[2]) != 1:
+#             vdir = data_list[2]
+#
+#         return data_graph, type_body
+#
+#     elif type_body == 'Prism':
+#
+#         data_graph = data_for_prism(data_list)
+#
+#         normals = []
+#         d=[]
+#         surface = data['Data Surfaces']
+#         for num in surface.keys():
+#             dict_pos = {k:[] for k in ['AX','AY','AZ']}
+#
+#             if surface[num]['AX'] != []:
+#                 AX = surface[num]['AX'][0]
+#             else:
+#                 AX = 0.0
+#             if surface[num]['AY'] != []:
+#                 AY = surface[num]['AY'][0]
+#             else:
+#                 AY = 0.0
+#             if surface[num]['AZ'] != []:
+#                 AZ = surface[num]['AZ'][0]
+#             else:
+#                 AZ = 0.0
+#             if surface[num]['A0'] != []:
+#                 A0 = surface[num]['A0'][0]
+#             else:
+#                 A0 = 0.0
+#
+#             if surface[num]['XSH'] != []:
+#                 AX = surface[num]['XSH'][0]
+#                 A0 = 1.0
+#             if surface[num]['YSH'] != []:
+#                 AY = surface[num]['YSH'][0]
+#                 A0 = 1.0
+#             if surface[num]['ZSH'] != []:
+#                 A0 = 1.0
+#                 AZ = surface[num]['ZSH'][0]
+#
+#
+#         matrix = [[1,0,0],[0,1,0],[0,0,1]]
+#         Z = np.zeros((8,3))
+#         for i in range(len(points)):
+#             Z[i,:] = np.dot(points[i,:],matrix)
+#         # Lista de las caras del poligono que forma el detector.
+#         verts = [[Z[0],Z[1],Z[3],Z[2]],
+#                  [Z[3],Z[2],Z[6],Z[7]],
+#                  [Z[6],Z[7],Z[5],Z[4]],
+#                  [Z[5],Z[4],Z[0],Z[1]],
+#                  [Z[1],Z[3],Z[7],Z[5]],
+#                  [Z[0],Z[2],Z[6],Z[4]]]
+#
+#         data_graph = Z, verts
+#
+#
+#         return data_graph, type_body
+#     elif type_body == 'Sphere':
+#
+#         rad_list = []
+#         rad_list.append(dict_rad['XSC'])
+#         rad_list.append(dict_rad['YSC'])
+#         rad_list.append(dict_rad['ZSC'])
+#
+#         # print(rad_list)
+#
+#         if len(rad_list[0]) == 1:
+#             R = rad_list[0][0]
+#         if len(rad_list[1]) == 1:
+#             R = rad_list[1][0]
+#         if len(rad_list[2]) == 1:
+#             R = rad_list[2][0]
+#
+#         # print(R)
+#
+#         data_graph = data_for_sphere(data_list,R)
+#
+#         return data_graph, type_body
+#
+# pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
+#
+# # pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\Imaging_XFCT_microCT\Code\RUN\penmain_2018"
+# # pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
+# geom = LoadDataFileGeometry(pathfolder)
+#
+# bodysName = [geom.BodysNames]
+# num_bodys = 1
+#
+# print_list_columns(geom.BodysNames, cols=2)
+# print('\n')
+#
+# list_num = geom.GetDataBody.keys()
+#
+# list_bodys = []
+# for i in list(list_num):
+#
+#     # respuesta = option_list(answer_list=geom.BodysNames, input_type='int', question='¿Que objeto desea agregar?', return_type=True, print_list=False)
+#     dbody = geom.GetDataBody[i]
+#     if dbody['Type'] != 'MODULE':
+#         data_graph, type_body = extract_geometric_vertices_from_detector(dbody)
+#
+#         if type_body == 'Prism':
+#             Z, verts = data_graph
+#             x = Z[:,0]
+#             y = Z[:,1]
+#             z = Z[:,2]
+#             i= [7, 0, 0, 0, 4, 4, 6, 1, 4, 0, 3, 6]
+#             j= [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
+#             k= [0, 7, 2, 3, 6, 7, 1, 6, 5, 5, 7, 2]
+#
+#
+#             list_bodys.append(go.Mesh3d(x=x, y=y, z=z, alphahull = 0,
+#                                         # i=i, j=j, k=k,
+#                                         opacity=0.5,
+#                                         color='blue'))
+#
+#
+#         if type_body == 'Cylinder':
+#
+#             # Extraemos los datos del cilindro
+#             Xc,Yc,Zc,tapa_1,tapa_2 = data_graph
+#             X1,Y1,Z1 = tapa_1
+#             X2,Y2,Z2 = tapa_2
+#
+#             colorscale = [[0, 'blue'],
+#                         [1, 'blue']]
+#
+#             # Superficie del cilindro
+#             list_bodys.append(go.Surface(x=Xc, y=Yc, z=Zc,
+#                              colorscale = colorscale,
+#                              showscale=False,
+#                              opacity=0.5))
+#
+#             # Superficie circulares
+#             list_bodys.append(go.Surface(x=X1, y=Y1, z=Z1,
+#                              colorscale = colorscale,
+#                              showscale=False,
+#                              opacity=0.5))
+#
+#             list_bodys.append(go.Surface(x=X2, y=Y2, z=Z2,
+#                              colorscale = colorscale,
+#                              showscale=False,
+#                              opacity=0.5))
+#
+#             # # Superficie circulares
+#             # list_bodys.append(go.Scatter3d(x = X1.tolist()+[None]+X2.tolist(),
+#             #                         y = Y1.tolist()+[None]+Y2.tolist(),
+#             #                         z = Z1.tolist()+[None]+Z2.tolist(),
+#             #                         # mode ='lines',
+#             #                         line = dict(color='blue', width=2),
+#             #                         opacity =0.55, showlegend=True))
+#
+#
+#         if type_body == 'Sphere':
+#             x,y,z = data_graph
+#             colorscale = [[0, 'blue'],
+#                           [1, 'blue']]
+#             list_bodys.append(go.Surface(x=x, y=y, z=z,
+#                              colorscale = colorscale,
+#                              showscale=False,
+#                              opacity=0.5))
+#
+#
+# # Datos para el eje x
+# list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
+#
+# # Datos para el eje y
+# list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
+#
+# # Datos para el eje z
+# list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
+#
+#
+# layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
+# # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
+# #                   scene = dict(xaxis=dict(range=[-10,10]),
+# #                                yaxis=dict(range=[-10,10]),
+# #                                zaxis=dict(range=[-10,10])))
+#
+# fig = go.Figure(data = list_bodys, layout = layout)
+# # fig.update_layout(scene_camera_eye_z= 0.55)
+# fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
+#
+# fig.show()
