@@ -126,6 +126,1447 @@ import itertools
 from itertools import groupby
 from MonteCarlo.Utils.utils import option_list, print_list_columns
 
+
+class LoadDataFileInput():
+
+    def __init__(self, pathfolder, input_used=None, list_input=False):
+        # # Instance Variable
+
+        if list_input:
+
+            self.path = pathfolder
+                # Extraemos el PEN que se utiliza
+            self.pen = pathfolder.split('\\')[-3]
+            self.__string_list = self.__loadfile()
+
+            # ---------------------------------------------------
+            # Cargamos el tipo de energia del INPUT
+            self.__load_energy_type()
+
+            # ---------------------------------------------------
+            # Separamos en bloques los datos del INPUT
+            self.__num_bloq = self.__data_process()
+
+            # ---------------------------------------------------
+            # Recolecta la informacion del INPUT dependiendo el PEN
+            bloque = np.array(self.__num_bloq)
+
+            if self.pen.find('pencyl') != -1:
+
+                for bloq in bloque[:,1]:
+
+                    if bloq.find('Source') != -1:
+                        self.Source = self.__Source_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Material data') != -1:
+                        self.Materials = self.__Material_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Interaction forcing') != -1:
+                        self.InteractionForcing = self.__Interaction_Forcing_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Local maximum') != -1:
+                        self.EmergingParticles = self.__Local_Maximum_Step_Length_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Counter array') != -1:
+                        self.ImpactDetectors = self.__Counter_Array_Dimensions_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Energy-deposition') != -1 or bloq.find('Energy deposition') != -1:
+                        self.EnergyDeposition = self.__Energy_Deposition_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Dose') != -1:
+                        self.DoseDistribution = self.__Dose_Distribution_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Charge') != -1 or bloq.find('charge') != -1:
+                        self.ChargeDistribution = self.__Charge_Distribution_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Job') != -1:
+                        self.JobProperties = self.__Job_Properties_Cyl(self.__string_list, self.__num_bloq)
+
+
+            elif self.pen.find('penmain') != -1:
+
+                for bloq in bloque[:,1]:
+
+                    if bloq.find('Source') != -1:
+                        self.Source = self.__Source_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Material data') != -1:
+                        self.Materials = self.__Material_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Geometry definition') != -1:
+                        self.Geometry = self.__Geometry_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Interaction forcing') != -1:
+                        self.InteractionForcing = self.__Interaction_Forcing_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Emerging particles') != -1:
+                        self.EmergingParticles = self.__Emerging_Particles_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Impact detectors') != -1:
+                        self.ImpactDetectors = self.__Impact_Detectors_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Energy deposition') != -1:
+                        self.EnergyDeposition = self.__Energy_Deposition_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Dose distribution') != -1:
+                        self.DoseDistribution = self.__Dose_Distribution_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Charge distribution') != -1:
+                        self.ChargeDistribution = self.__Charge_Distribution_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Job') != -1:
+                        self.JobProperties = self.__Job_Properties_Main(self.__string_list, self.__num_bloq)
+
+            else:
+                print('No se puede determinar el PEN que se esta utilizando')
+
+
+        else:
+            # ---------------------------------------------------
+            # Buscamos y elegimos el path del INPUT a cargar
+
+            path_input = self.__find_input(pathfolder, input_used=input_used)
+            self.path = path_input
+
+            # ---------------------------------------------------
+            # Extraemos el PEN que se utiliza
+            self.pen = pathfolder.split('\\')[-1]
+
+            # ---------------------------------------------------
+            # Cargamos los datos del INPUT en una lista
+            self.__string_list = self.__loadfile()
+
+            # ---------------------------------------------------
+            # Cargamos el tipo de energia del INPUT
+            self.__load_energy_type()
+
+            # ---------------------------------------------------
+            # Separamos en bloques los datos del INPUT
+            self.__num_bloq = self.__data_process()
+
+            # ---------------------------------------------------
+            # Recolecta la informacion del INPUT dependiendo el PEN
+            bloque = np.array(self.__num_bloq)
+
+            if self.pen.find('pencyl') != -1:
+
+                for bloq in bloque[:,1]:
+
+                    if bloq.find('Source') != -1:
+                        self.Source = self.__Source_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Material data') != -1:
+                        self.Materials = self.__Material_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Interaction forcing') != -1:
+                        self.InteractionForcing = self.__Interaction_Forcing_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Local maximum') != -1:
+                        self.EmergingParticles = self.__Local_Maximum_Step_Length_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Counter array') != -1:
+                        self.ImpactDetectors = self.__Counter_Array_Dimensions_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Energy-deposition') != -1 or bloq.find('Energy deposition') != -1:
+                        self.EnergyDeposition = self.__Energy_Deposition_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Dose') != -1:
+                        self.DoseDistribution = self.__Dose_Distribution_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Charge') != -1 or bloq.find('charge') != -1:
+                        self.ChargeDistribution = self.__Charge_Distribution_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Job') != -1:
+                        self.JobProperties = self.__Job_Properties_Cyl(self.__string_list, self.__num_bloq)
+
+
+            elif self.pen.find('penmain') != -1:
+
+                for bloq in bloque[:,1]:
+
+                    if bloq.find('Source') != -1:
+                        self.Source = self.__Source_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Material data') != -1:
+                        self.Materials = self.__Material_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Geometry definition') != -1:
+                        self.Geometry = self.__Geometry_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Interaction forcing') != -1:
+                        self.InteractionForcing = self.__Interaction_Forcing_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Emerging particles') != -1:
+                        self.EmergingParticles = self.__Emerging_Particles_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Impact detectors') != -1:
+                        self.ImpactDetectors = self.__Impact_Detectors_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Energy deposition') != -1:
+                        self.EnergyDeposition = self.__Energy_Deposition_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Dose distribution') != -1:
+                        self.DoseDistribution = self.__Dose_Distribution_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Charge distribution') != -1:
+                        self.ChargeDistribution = self.__Charge_Distribution_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Job') != -1:
+                        self.JobProperties = self.__Job_Properties_Main(self.__string_list, self.__num_bloq)
+
+            else:
+                print('No se puede determinar el PEN que se esta utilizando')
+
+    def __reload_file(self):
+
+        # ---------------------------------------------------
+        # Cargamos los datos del INPUT en una lista
+        self.__string_list = self.__loadfile()
+
+        # ---------------------------------------------------
+        # Separamos en bloques los datos del INPUT
+        self.__num_bloq = self.__data_process()
+
+        # ---------------------------------------------------
+        # Recolecta la informacion del INPUT dependiendo el PEN
+        bloque = np.array(self.__num_bloq)
+
+        if self.pen.find('pencyl') != -1:
+
+            for bloq in bloque[:,1]:
+
+                if bloq.find('Source') != -1:
+                    self.Source = self.__Source_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Material data') != -1:
+                    self.Materials = self.__Material_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Interaction forcing') != -1:
+                    self.InteractionForcing = self.__Interaction_Forcing_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Local maximum') != -1:
+                    self.EmergingParticles = self.__Local_Maximum_Step_Length_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Counter array') != -1:
+                    self.ImpactDetectors = self.__Counter_Array_Dimensions_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Energy-deposition') != -1 or bloq.find('Energy deposition') != -1:
+                    self.EnergyDeposition = self.__Energy_Deposition_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Dose') != -1:
+                    self.DoseDistribution = self.__Dose_Distribution_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Charge') != -1 or bloq.find('charge') != -1:
+                    self.ChargeDistribution = self.__Charge_Distribution_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Job') != -1:
+                    self.JobProperties = self.__Job_Properties_Cyl(self.__string_list, self.__num_bloq)
+
+
+        elif self.pen.find('penmain') != -1:
+
+            for bloq in bloque[:,1]:
+
+                if bloq.find('Source') != -1:
+                    self.Source = self.__Source_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Material data') != -1:
+                    self.Materials = self.__Material_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Geometry definition') != -1:
+                    self.Geometry = self.__Geometry_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Interaction forcing') != -1:
+                    self.InteractionForcing = self.__Interaction_Forcing_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Emerging particles') != -1:
+                    self.EmergingParticles = self.__Emerging_Particles_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Impact detectors') != -1:
+                    self.ImpactDetectors = self.__Impact_Detectors_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Energy deposition') != -1:
+                    self.EnergyDeposition = self.__Energy_Deposition_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Dose distribution') != -1:
+                    self.DoseDistribution = self.__Dose_Distribution_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Charge distribution') != -1:
+                    self.ChargeDistribution = self.__Charge_Distribution_Main(self.__string_list, self.__num_bloq)
+                if bloq.find('Job') != -1:
+                    self.JobProperties = self.__Job_Properties_Main(self.__string_list, self.__num_bloq)
+
+        else:
+            print('No se puede determinar el PEN que se esta utilizando')
+
+    def __find_input(self, pathfolder, input_used=None):
+
+        print('------')
+        print('INPUTS')
+        print('------\n')
+
+        path_files = os.path.join(pathfolder, 'input')
+        files_input = [os.path.join(path_files, f) for f in os.listdir(path_files)
+            if os.path.isfile(os.path.join(path_files, f)) and f.endswith('.in')]
+
+        list_files = [os.path.basename(f) for f in os.listdir(path_files) if os.path.isfile(os.path.join(path_files, f)) and f.endswith('.in')]
+
+        if input_used == None:
+
+            respuesta = option_list(answer_list=list_files, input_type='int', question='Archivos INPUTS encontrados', return_type=False)
+
+            path_input = files_input[respuesta]
+
+        else:
+            files_input = [os.path.join(path_files, f) for f in os.listdir(path_files)
+                if os.path.isfile(os.path.join(path_files, f)) and f.endswith('.in') and f.startswith(input_used)]
+
+            path_input = files_input[0]
+
+        return path_input
+
+    def __basename(self, path):
+        if len(path) != 1:
+            basename_path = [os.path.basename(f) for f in path]
+        else:
+            basename_path = os.path.basename(path)
+
+        return basename_path
+
+    def __loadfile(self):
+        file = open(self.path)
+        string_list = file.readlines()
+        file.close()
+        return string_list
+
+    def __load_energy_type(self):
+
+        # Tomamos el texto completo y lo almacenamos en string_list
+        string_list = self.__string_list
+
+        # (1) Buscamos la fila que tenga la palabra SENERG or SPECTR
+        row_string = [[i,string] for i,string in enumerate(string_list) if string.startswith('SENERG')]
+        if len(row_string) != 0:
+            self.energy_type = "SENERG"
+        else:
+            self.energy_type = "SPECTR"
+
+    def __data_process(self):
+
+        num_bloq = []
+        # (1) Separamos el texto en bloques.
+        for i, row_string in enumerate(self.__string_list):
+
+            row_string = row_string.lstrip('       ').rstrip('.').rstrip('\n')
+
+            if row_string.startswith("TITLE"):
+                self.Title = row_string.split('  ')[1]
+
+            if row_string.startswith(">>>"):
+                num_bloq.append([i,' '.join(re.split(r'[\s,;,>]+',row_string)).lstrip(' ').rstrip('.')])
+
+            if row_string.startswith('END '):
+                num_bloq.append([i,row_string.split(' ')[0]])
+
+        return num_bloq
+
+    def __format_e(self,n):
+        a = '%e' % n
+        d = a.split('e')[0].rstrip('0').rstrip('.')
+        return d[:4] + 'e' + a.split('e')[1][1:]
+
+    def modify_energy(self,value_energy):
+
+        # Convertimos en string el valor de energia ingresado.
+        value_energy = float(value_energy)
+        value_energy = self.__format_e(value_energy)
+
+        # Para PRUEBAS DE CODIGO
+        # path = 'D:\Proyectos_Investigacion\Imaging_XFCT_microCT\Code_Imaging_XFCT_microCT\Detector\RUN\penmain_2018\input\input.in'
+        # file = open(path)
+        # string_list = file.readlines()
+        # file.close()
+
+        # Tomamos el texto completo y lo almacenamos en string_list
+        string_list = self.__string_list
+
+        # (1) Buscamos la fila que tenga la palabra SENERG or SPECTR
+        row_string = [[i,string] for i,string in enumerate(string_list) if string.startswith('SENERG')]
+        row_string = row_string[0]
+        len_string = len(row_string[1])
+
+        # (2) Procesamos la fila: Separamos el dato a modificar del comentario
+        # Dato
+        data = row_string[1].split('[')[0]
+
+        # Comentario
+        if len( row_string[1].split('[')) > 1:
+            has_comment = True
+            comment = row_string[1].split('[')[1]
+        else:
+            has_comment = False
+
+        # (2.1) Procesamos el dato
+        # Quitamos los espacios y caracteres innecesarios.
+        data = ' '.join(re.split(r'[\s,;,>,\],\[]+',data))
+        data = data.split(' ')
+        data = [f for f in data if f]
+
+        new_row_string = data[0]
+        size_ind = len(new_row_string)
+
+        if size_ind < 8:
+            add_ind = 7 - size_ind
+            for f in range(add_ind):
+                new_row_string = new_row_string + ' '
+
+        # (3) Modificamos los datos
+        values = data[1:]
+        if len(values) > 1:
+
+            for j, value in enumerate(value_energy):
+                new_row_string = new_row_string + '{} '.format(value)
+
+        else:
+
+            new_row_string = new_row_string + '{} '.format(value_energy)
+
+        # (4) Agregamos comnetario si lo tiene
+        if has_comment:
+
+            len_comment = len(comment)+1
+            len_space = len_string - len(new_row_string) - len_comment
+            for f in range(len_space):
+                new_row_string = new_row_string + ' '
+
+            new_row_string = new_row_string + '[' + comment
+
+        else:
+
+            len_space = len_string - len(new_row_string)
+            for f in range(len_space):
+                new_row_string = new_row_string + ' '
+
+            new_row_string = new_row_string + '\n'
+
+        # (5) Guardamos los datos modificados
+        string_list[row_string[0]] = new_row_string
+        my_file = open('{}'.format(self.path), "w")
+        new_file_contents = "".join(string_list)
+        my_file.write(new_file_contents)
+        my_file.close()
+
+        # (6) Cargamos el archivo nuevamente
+        self.__reload_file()
+
+    def modify_input(self):
+
+        ''' Modificamos los valores de los parametros del INPUT
+        '''
+
+        os.system('cls')
+
+        print('------------')
+        print('MODIFY INPUT')
+        print('------------\n')
+
+        modify_parameters = option_list(input_type='string', question='¿Desea modificar el input?')
+
+        if modify_parameters:
+
+            string_list = self.__string_list
+            num_bloq = np.array(self.__num_bloq)
+            # self.num_bloq = self.__num_bloq
+            # self.string_list = self.__string_list
+            #
+            # (2) Iniciamos con la modificaciones de los parametros
+            temp = True
+            while temp:
+
+                respuesta = option_list(answer_list=num_bloq[:-1,1], input_type='int', question='¿Que bloque desea modificar?)',return_type=False)
+
+                rows_strings = num_bloq[respuesta:respuesta+2,0]
+                rows_names =  num_bloq[respuesta,1]
+
+                range_rows = np.arange(int(rows_strings[0]),int(rows_strings[1]))
+                range_rows = range_rows[1:-1]
+
+                for i in range_rows:
+
+                    row_string = self.__string_list[i]
+                    len_string = len(row_string)
+
+                    # Separamos el dato a modificar del comentario
+                    data = row_string.split('[')[0]
+
+
+                    if len( row_string.split('[')) > 1:
+                        has_comment = True
+                        comment = row_string.split('[')[1]
+                    else:
+                        has_comment = False
+
+                    # (1) Procesamos el dato
+                    # Quitamos los espacios y caracteres innecesarios.
+                    data = ' '.join(re.split(r'[\s,;,>,\],\[]+',data))
+                    data = data.split(' ')
+                    data = [f for f in data if f]
+
+                    new_row_string = data[0]
+                    size_ind = len(new_row_string)
+
+                    if size_ind < 8:
+                        add_ind = 7 - size_ind
+                        for f in range(add_ind):
+                            new_row_string = new_row_string + ' '
+
+                    # (2) Modificamos los datos
+                    if has_comment:
+                        print('\n')
+                        print('- Paramentros a modificar: ', comment[:-2],'\n')
+                    else:
+                        print('\n')
+                        print('- Paramentros a modificar: No se encontro referencia \n')
+
+                    values = data[1:]
+                    if len(values) > 1:
+
+                        for j, value in enumerate(values):
+                            print('Parametro {}:'.format(j+1))
+
+                            valor = input('\t\t'+new_row_string+'({}) : '.format(value))
+                            new_row_string = new_row_string + '{} '.format(valor)
+
+                    else:
+
+                        valor = input('\t\t'+new_row_string+'({}): '.format(values[0]))
+                        new_row_string = new_row_string + '{} '.format(valor)
+
+                    if has_comment:
+
+                        len_comment = len(comment)+1
+                        len_space = len_string - len(new_row_string) - len_comment
+                        for f in range(len_space):
+                            new_row_string = new_row_string + ' '
+
+                        new_row_string = new_row_string + '[' + comment
+
+                    else:
+
+                        len_space = len_string - len(new_row_string)
+                        for f in range(len_space):
+                            new_row_string = new_row_string + ' '
+
+                        new_row_string = new_row_string + '\n'
+
+                    # (3) Guardamos los datos modificados
+                    string_list[i] = new_row_string
+                    my_file = open('{}'.format(self.path), "w")
+                    new_file_contents = "".join(string_list)
+                    my_file.write(new_file_contents)
+                    my_file.close()
+
+                print('\n')
+                respuesta = option_list(input_type='string', question='¿Desea modificar otro bloque? (y/n)')
+
+                if respuesta:
+                    temp = True
+                else:
+                    temp = False
+
+                    self.__reload_file()
+
+    def GetDataBeam(self):
+
+        if self.pen.find('pencyl') != -1:
+            self.Source = self.__Source_Cyl(self.__string_list, self.__num_bloq)
+        elif self.pen.find('penmain') != -1:
+            self.Source = self.__Source_Main(self.__string_list, self.__num_bloq)
+        else:
+            print('NO SE ENCONTRÓ EL BLOQUE "SOURCE" EN EL INPUT...')
+        return self.Source.SPOSIT, self.Source.SCONE
+
+    def modify_materials(self, material):
+
+        # Para PRUEBAS DE CODIGO
+        # path = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\Efficient_Detector_Si\Code\RUN\penmain_2018\input\input.in'
+        # file = open(path)
+        # string_list = file.readlines()
+        # file.close()
+
+        # Tomamos el texto completo y lo almacenamos en string_list
+        string_list = self.__string_list
+
+        # (1) Buscamos la fila que tenga la palabra SENERG or SPECTR
+        row_string = [[i,string] for i,string in enumerate(string_list) if string.startswith('MFNAME')]
+
+        # (2) Procesamos la fila: Separamos el dato a modificar del comentario
+
+        for row in row_string:
+            # Dato
+            srow = row[1]
+            data = srow.split('[')[0]
+            len_string = len(srow)
+            # Comentario
+            if len(srow.split('[')) > 1:
+                has_comment = True
+                comment = srow.split('[')[1]
+            else:
+                has_comment = False
+
+            # (2.1) Procesamos el dato
+            # Quitamos los espacios y caracteres innecesarios.
+            data = ' '.join(re.split(r'[\s,;,>,\],\[]+',data))
+            data = data.split(' ')
+            data = [f for f in data if f]
+
+            # Verificamos que sea el material que se quiere modificar
+            mat = data[1].split('\\')[-1]
+            com_mat = '\\'.join(data[1].split('\\')[:-1]) +'\\'
+            if mat != material and mat != 'Si.mat':
+                irow = row[0]
+                new_row_string = data[0]
+                size_ind = len(new_row_string)
+
+                if size_ind < 8:
+                    add_ind = 7 - size_ind
+                    for f in range(add_ind):
+                        new_row_string = new_row_string + ' '
+
+                # (3) Modificamos los datos
+                values = data[1:]
+                if len(values) > 1:
+
+                    for j, value in enumerate(material):
+                        new_row_string = new_row_string + '{}'.format(com_mat) + '{}.mat '.format(value)
+
+                else:
+
+                    new_row_string = new_row_string + '{}'.format(com_mat) + '{}.mat '.format(material)
+
+                # (4) Agregamos comnetario si lo tiene
+                if has_comment:
+
+                    len_comment = len(comment)+1
+                    len_space = len_string - len(new_row_string) - len_comment
+                    for f in range(len_space):
+                        new_row_string = new_row_string + ' '
+
+                    new_row_string = new_row_string + '[' + comment
+
+                else:
+
+                    len_space = len_string - len(new_row_string)
+                    for f in range(len_space):
+                        new_row_string = new_row_string + ' '
+
+                    new_row_string = new_row_string + '\n'
+
+        # (5) Guardamos los datos modificados
+        string_list[irow] = new_row_string
+        my_file = open('{}'.format(self.path), "w")
+        new_file_contents = "".join(string_list)
+        my_file.write(new_file_contents)
+        my_file.close()
+
+        # (6) Cargamos el archivo nuevamente
+        self.__reload_file()
+
+    # PENMAIN
+
+    class __Source_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Source') != -1:
+
+                    list_param = ['SKPAR', 'SENERG', 'SPECTR', 'SGPOL', 'SPOSIT',
+                                  'SBOX', 'SBODY', 'SCONE', 'SPYRAM']
+
+                    spectr_sub = ['Ei','Pi']
+                    sgpol_sub = ['SP1','SP2','SP3']
+                    sposit_sub = ['SX0', 'SY0','SZ0']
+                    sbox_sub = ['SSX','SSY','SSZ']
+                    scone_sub = ['THETA', 'PHI', 'ALPHA']
+                    spyram_sub = ['THETAL','THETAU','PHIL','PHIU']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("SKPAR"):
+                                    self.SKPAR = [f for f in string[1:]]
+
+                                if string[0].startswith("SENERG"):
+                                    self.SENERG = [f for f in string[1:]]
+
+                                if string[0].startswith("SPECTR"):
+                                    self.SPECTR = {n:f for (f,n) in zip(string[1:],spectr_sub)}
+
+                                if string[0].startswith("SGPOL"):
+                                    self.SGPOL = {n:f for (f,n) in zip(string[1:],sgpol_sub)}
+
+                                if string[0].startswith("SPOSIT"):
+                                    self.SPOSIT = {n:f for (f,n) in zip(string[1:],sposit_sub)}
+
+                                if string[0].startswith("SBOX"):
+                                    self.SBOX = {n:f for (f,n) in zip(string[1:],sbox_sub)}
+
+                                if string[0].startswith("SBODY"):
+                                    self.SBODY = [f for f in string[1:]]
+
+                                if string[0].startswith("SCONE"):
+                                    self.SCONE = {n:f for (f,n) in zip(string[1:],scone_sub)}
+
+                                if string[0].startswith("SPYRAM"):
+                                    self.SPYRAM = {n:f for (f,n) in zip(string[1:],spyram_sub)}
+
+    class __Material_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Material data') != -1:
+
+                    list_param = ['MFNAME', 'MSIMPA']
+
+                    # Separamos los datos
+                    parametros = []
+                    materiales = []
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("MSIMPA"):
+                                    parametros.append([f for f in string[1:]])
+
+                                if string[0].startswith("MFNAME"):
+                                    materiales.append(string[1:][0].split('\\')[-1].rstrip('.mat'))
+
+                    parameters = ['EAB1', 'EAB2', 'EAB3', 'C1', 'C2', 'WCC', 'WCR']
+                    self.materials = {k:{p:float(v) for p,v in zip(parameters,parametros[i])} for i,k in enumerate(materiales)}
+
+    class __Geometry_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Geometry') != -1:
+                    list_param = ['GEOMFN', 'DSMAX', 'EABSB']
+
+                    dsmax_sub = ['KB', 'DSMAX']
+                    eabsb_sub = ['KB', 'EABSB']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("DSMAX"):
+                                    self.DSMAX = {n:f for (f,n) in zip(string[1:],dsmax_sub)}
+
+                                if string[0].startswith("EABSB"):
+                                    self.EABSB = {n:f for (f,n) in zip(string[1:],eabsb_sub)}
+
+                                if string[0].startswith("GEOMFN"):
+                                    self.geometry = string[1:][0].split('\\')[-1].rstrip('.geo')
+
+    class __Interaction_Forcing_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Interaction forcing') != -1:
+
+                    list_param = ['IFORCE']
+
+                    iforce_sub = ['KB','KPAR','ICOL','FORCER','WLOW','WHIG']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("IFORCE"):
+                                    self.IFORCE = {n:f for (f,n) in zip(string[1:],iforce_sub)}
+
+    class __Emerging_Particles_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Emerging particles') != -1:
+
+                    list_param = ['NBE', 'NBANGL']
+
+                    nbe_sub = ['EL','EU','NBE']
+                    nbangl_sub = ['NBTH', 'NBPH']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("NBE"):
+                                    self.NBE = {n:f for (f,n) in zip(string[1:],nbe_sub)}
+
+                                if string[0].startswith("NBANGL"):
+                                    self.NBANGL = {n:f for (f,n) in zip(string[1:],nbangl_sub)}
+
+    class __Impact_Detectors_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Impact detectors') != -1:
+
+                    list_param = ['IMPDET', 'IDBODY', 'IDKPAR']
+
+                    impdet_sub = ['EL','EU','NBE','IPSF','IDCUT']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("IMPDET"):
+                                    self.IMPDET = {n:f for (f,n) in zip(string[1:],impdet_sub)}
+
+                                if string[0].startswith("IDBODY"):
+                                    self.IDBODY = [f for f in string[1:]]
+
+                                if string[0].startswith("IDKPAR"):
+                                    self.IDKPAR = [f for f in string[1:]]
+
+    class __Energy_Deposition_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Energy deposition') != -1 or num_bloq[i][1].find('Energy-deposition') != -1:
+
+                    list_param = ['ENDETC', 'EDSPC', 'EDBODY']
+
+                    endetc_sub = ['EL','EU','NBE']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("ENDETC"):
+                                    self.ENDETC = {n:f for (f,n) in zip(string[1:],endetc_sub)}
+
+                                if string[0].startswith("EDSPC"):
+                                    self.EDSPC = [f for f in string[1:]]
+
+                                if string[0].startswith("EDBODY"):
+                                    self.EDBODY = [f for f in string[1:]]
+
+    class __Dose_Distribution_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Dose distribution') != -1:
+
+                    list_param = ['GRIDX', 'GRIDY', 'GRIDZ', 'GRIDBN']
+
+                    gridx_sub = ['XL','XU']
+                    gridy_sub = ['YL','YU']
+                    gridz_sub = ['ZL','ZU']
+                    gridbn_sub = ['NDBX','NDBY','NDBZ']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("GRIDX"):
+                                    self.GRIDX = {n:f for (f,n) in zip(string[1:],gridx_sub)}
+
+                                if string[0].startswith("GRIDY"):
+                                    self.GRIDY = {n:f for (f,n) in zip(string[1:],gridy_sub)}
+
+                                if string[0].startswith("GRIDZ"):
+                                    self.GRIDZ = {n:f for (f,n) in zip(string[1:],gridz_sub)}
+
+                                if string[0].startswith("GRIDBN"):
+                                    self.GRIDBN = {n:f for (f,n) in zip(string[1:],gridbn_sub)}
+
+    class __Charge_Distribution_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Charge distribution') != -1:
+                    list_param = ['GRIDCX', 'GRIDCY', 'GRIDCZ', 'GRIDCBN']
+
+                    gridcx_sub = ['XL','XU']
+                    gridcy_sub = ['YL','YU']
+                    gridcz_sub = ['ZL','ZU']
+                    gridcbn_sub = ['NDBX','NDBY','NDBZ']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("GRIDCX"):
+                                    self.GRIDCX = {n:f for (f,n) in zip(string[1:],gridx_sub)}
+
+                                if string[0].startswith("GRIDCY"):
+                                    self.GRIDCY = {n:f for (f,n) in zip(string[1:],gridy_sub)}
+
+                                if string[0].startswith("GRIDCZ"):
+                                    self.GRIDCZ = {n:f for (f,n) in zip(string[1:],gridz_sub)}
+
+                                if string[0].startswith("GRIDCBN"):
+                                    self.GRIDCBN = {n:f for (f,n) in zip(string[1:],gridbn_sub)}
+
+    class __Job_Properties_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Job properties') != -1:
+                    rows_strings = string_list[num_bloq[i][0]:num_bloq[i+1][0]]
+
+                    # Separamos los datos
+                    for i, row_string in enumerate(rows_strings):
+
+                        # Quitamos el string entre corchetes, si tiene.
+                        init = row_string.find('[')
+                        row_string = row_string[:init]
+
+                        # Quitamos los espacios y caracteres innecesarios.
+                        row_string = ' '.join(re.split(r'[\s,;,>,\],\[]+',row_string)).lstrip(' ')
+
+                        # Separamos los datos en una lista y quitamos los espacios vacios
+                        row_string = [f for f in row_string.split(' ') if f]
+
+                        if row_string[0].startswith("RESUME"):
+                            self.RESUME = row_string[1:][0]
+                        if row_string[0].startswith("DUMPTO"):
+                            self.DUMPTO = row_string[1:][0]
+                        if row_string[0].startswith("RSEED"):
+                            self.DUMPP = [f for f in row_string[1:]]
+                        if row_string[0].startswith("DUMPP"):
+                            self.DUMPP = int(row_string[1:][0])
+                        if row_string[0].startswith("NSIMSH"):
+                            self.NSIMSH = float(row_string[1:][0])
+                        if row_string[0].startswith("TIME"):
+                            self.TIME = float(row_string[1:][0])
+
+    # PENCYL
+
+    class __Source_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Source') != -1:
+
+                    list_param = ['SKPAR', 'SENERG', 'SPECTR', 'SGPOL', 'SEXTND',
+                                  'STHICK', 'SRADII', 'SPOSIT', 'SCONE', 'SPYRAM']
+
+                    spectr_sub = ['Ei','Pi']
+                    sgpol_sub = ['SP1','SP2','SP3']
+                    sposit_sub = ['SX0', 'SY0','SZ0']
+                    sextnd_sub = ['KL','KC','RELAC']
+                    scone_sub = ['THETA', 'PHI', 'ALPHA']
+                    spyram_sub = ['THETAL','THETAU','PHIL','PHIU']
+                    sradii = ['SRIN', 'SROUT']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("SKPAR"):
+                                    self.SKPAR = [f for f in string[1:]]
+
+                                if string[0].startswith("SENERG"):
+                                    self.SENERG = [f for f in string[1:]]
+
+                                if string[0].startswith("SPECTR"):
+                                    self.SPECTR = {n:f for (f,n) in zip(string[1:],spectr_sub)}
+
+                                if string[0].startswith("SGPOL"):
+                                    self.SGPOL = {n:f for (f,n) in zip(string[1:],sgpol_sub)}
+
+                                if string[0].startswith("SPOSIT"):
+                                    self.SPOSIT = {n:f for (f,n) in zip(string[1:],sposit_sub)}
+
+                                if string[0].startswith("SEXTND"):
+                                    self.SEXTND = {n:f for (f,n) in zip(string[1:],sextnd_sub)}
+
+                                if string[0].startswith("STHICK"):
+                                    self.STHICK = [f for f in string[1:]]
+
+                                if string[0].startswith("SRADII"):
+                                    self.SRADII = {n:f for (f,n) in zip(string[1:],sradii_sub)}
+
+                                if string[0].startswith("SCONE"):
+                                    self.SCONE = {n:f for (f,n) in zip(string[1:],scone_sub)}
+
+                                if string[0].startswith("SPYRAM"):
+                                    self.SPYRAM = {n:f for (f,n) in zip(string[1:],spyram_sub)}
+
+    class __Material_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Material data') != -1:
+
+                    list_param = ['MFNAME', 'MSIMPA']
+
+                    # Separamos los datos
+                    parametros = []
+                    materiales = []
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("MSIMPA"):
+                                    parametros.append([f for f in string[1:]])
+
+                                if string[0].startswith("MFNAME"):
+                                    materiales.append(string[1:][0].split('\\')[-1].rstrip('.mat'))
+
+                    parameters = ['EAB1', 'EAB2', 'EAB3', 'C1', 'C2', 'WCC', 'WCR']
+                    self.materials = {k:{p:float(v) for p,v in zip(parameters,parametros[i])} for i,k in enumerate(materiales)}
+
+    class __Interaction_Forcing_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Interaction forcing') != -1:
+
+                    list_param = ['IFORCE']
+
+                    iforce_sub = ['KL','KC','KPAR','ICOL','FORCER','WLOW','WHIG']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("IFORCE"):
+                                    self.IFORCE = {n:f for (f,n) in zip(string[1:],iforce_sub)}
+
+    class __Local_Maximum_Step_Length_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Local maximum') != -1:
+
+                    list_param = ['DSMAX', 'EABSB']
+
+                    dsmax_sub = ['KL','KC','DSMAX']
+                    eabsb_sub = ['KL','KC','EABSB']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("DSMAX"):
+                                    self.DSMAX = {n:f for (f,n) in zip(string[1:],nbe_sub)}
+
+                                if string[0].startswith("EABSB"):
+                                    self.EABSB = {n:f for (f,n) in zip(string[1:],nbangl_sub)}
+
+    class __Counter_Array_Dimensions_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Counter array') != -1:
+
+                    list_param = ['NBE', 'NBANGL', 'NBZ', 'NBR', 'NBTL']
+
+                    nbe_sub = ['EL','EU','NBE']
+                    nbangl_sub = ['NBTH', 'NBPH']
+                    nbz_sub = ['NBZ']
+                    nbr_sub = ['NBR']
+                    nbtl_sub = ['TLMIN','TLMAX','NBTL']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("NBE"):
+                                    self.NBE = {n:f for (f,n) in zip(string[1:],nbe_sub)}
+
+                                if string[0].startswith("NBANGL"):
+                                    self.NBANGL = {n:f for (f,n) in zip(string[1:],nbangl_sub)}
+
+                                if string[0].startswith("NBZ"):
+                                    self.NBZ = {n:f for (f,n) in zip(string[1:],nbz_sub)}
+
+                                if string[0].startswith("NBR"):
+                                    self.NBR = {n:f for (f,n) in zip(string[1:],nbr_sub)}
+
+                                if string[0].startswith("NBTL"):
+                                    self.NBTL = {n:f for (f,n) in zip(string[1:],nbtl_sub)}
+
+    class __Energy_Deposition_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Energy deposition') != -1 or num_bloq[i][1].find('Energy-deposition') != -1:
+
+                    list_param = ['ENDETC', 'EDSPC', 'EDBODY']
+
+                    endetc_sub = ['EL','EU','NBE']
+                    edbody_sub = ['KL', 'KC']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("ENDETC"):
+                                    self.ENDETC = {n:f for (f,n) in zip(string[1:],endetc_sub)}
+
+                                if string[0].startswith("EDSPC"):
+                                    self.EDSPC = [f for f in string[1:]]
+
+                                if string[0].startswith("EDBODY"):
+                                    self.EDBODY = {n:f for (f,n) in zip(string[1:],edbody_sub)}
+
+    class __Dose_Distribution_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Dose') != -1:
+
+                    list_param = ['DOSE2D']
+
+                    dose_sub = ['KL','KC','NZ','NR']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("DOSE2D"):
+                                    self.DOSE2D = {n:f for (f,n) in zip(string[1:],dose_sub)}
+
+    class __Charge_Distribution_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Charge') != -1 or num_bloq[i][1].find('charge') != -1:
+                    list_param = ['DOSE2D']
+
+                    dose_sub = ['KL','KC','NZ','NR']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("DOSE2D"):
+                                    self.CHARGE2D = {n:f for (f,n) in zip(string[1:],dose_sub)}
+
+    class __Job_Properties_Cyl():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('Job properties') != -1:
+                    rows_strings = string_list[num_bloq[i][0]:num_bloq[i+1][0]]
+
+                    # Separamos los datos
+                    for i, row_string in enumerate(rows_strings):
+
+                        # Quitamos el string entre corchetes, si tiene.
+                        init = row_string.find('[')
+                        row_string = row_string[:init]
+
+                        # Quitamos los espacios y caracteres innecesarios.
+                        row_string = ' '.join(re.split(r'[\s,;,>,\],\[]+',row_string)).lstrip(' ')
+
+                        # Separamos los datos en una lista y quitamos los espacios vacios
+                        row_string = [f for f in row_string.split(' ') if f]
+
+                        if row_string[0].startswith("RESUME"):
+                            self.RESUME = row_string[1:][0]
+                        if row_string[0].startswith("DUMPTO"):
+                            self.DUMPTO = row_string[1:][0]
+                        if row_string[0].startswith("RSEED"):
+                            self.DUMPP = [f for f in row_string[1:]]
+                        if row_string[0].startswith("DUMPP"):
+                            self.DUMPP = int(row_string[1:][0])
+                        if row_string[0].startswith("NSIMSH"):
+                            self.NSIMSH = float(row_string[1:][0])
+                        if row_string[0].startswith("TIME"):
+                            self.TIME = float(row_string[1:][0])
+
 class LoadDataFileGeometry():
 
     def __init__(self, pathfolder):
@@ -491,509 +1932,6 @@ class LoadDataFileGeometry():
         numSurfaces_flat = [item for sublist in numSurfaces for item in sublist]
         numSurfaces = list(set(numSurfaces_flat))
         self.numSurfaces = len(numSurfaces)
-
-class TransformGeometry():
-
-    def __init__(self, pathfolder):
-        # # Instance Variable
-
-        # ---------------------------------------------------
-        # Extraemos el PEN que se utiliza
-        self.pen = pathfolder.split('\\')[-1]
-
-        if self.pen == 'penmain_2018':
-
-            # ---------------------------------------------------
-            # Buscamos y elegimos el path del GEOMETRY a cargar
-            path_geometry = self.__find_geometry_main(pathfolder)
-            self.path = path_geometry
-
-            # ---------------------------------------------------
-            # Cargamos los datos del GEOMETRY en una lista
-            self.__string_list = self.__loadfile()
-
-            self.__get_data_main()
-
-
-        elif self.pen == 'pencyl_2018':
-
-            # ---------------------------------------------------
-            # Buscamos y elegimos el path del GEOMETRY a cargar
-            path_geometry = self.__find_geometry_cyl(pathfolder)
-            self.path = path_geometry
-
-            # ---------------------------------------------------
-            # Cargamos los datos del GEOMETRY en una lista
-            self.__string_list = self.__loadfile()
-
-            self.__get_data_cyl()
-
-        else:
-            print('No se encontro el archivo correspondiente a la geometria de la simulacion.')
-
-
-        # ---------------------------------------------------
-        # Separamos en bloques los datos del INPUT
-        # self.__num_bloq = self.__data_process()
-
-        # ---------------------------------------------------
-        # Recolecta la informacion del INPUT dependiendo el PEN
-
-    def __format_e(self,n):
-
-        a = '%e' % n
-        d = a.split('e')[0].rstrip('0').rstrip('.')
-        return d[:4] + 'e' + a.split('e')[1][1:]
-
-    def __converttotext(self, c):
-        num_str = '{:.7f}'.format(c/10000)
-        numtxt = len('0.000000000000000')
-        format = 'E+00'
-        if len(num_str) != numtxt:
-            cantidad = numtxt - len(num_str)
-            for i in range(cantidad):
-                num_str = num_str + '0'
-        num_str = num_str + format
-        return num_str
-
-    def circle_detectors(self):
-
-        def __converttotext(c):
-            if c > 0:
-                num_str = '{:.7f}'.format(c)
-                numtxt = len('0.000000000000000')
-                format = 'E+00'
-                if len(num_str) != numtxt:
-                    cantidad = numtxt - len(num_str)
-                    for i in range(cantidad):
-                        num_str = num_str + '0'
-                num_str = '+' + num_str + format
-                return num_str
-            elif c < 0:
-                num_str = '{:.7f}'.format(c)
-                numtxt = len('0.000000000000000')
-                format = 'E+00'
-                if len(num_str) != numtxt:
-                    cantidad = numtxt - len(num_str)
-                    for i in range(cantidad+1):
-                        num_str = num_str + '0'
-                num_str = num_str + format
-                return num_str
-            else:
-                num_str = '{:.7f}'.format(c)
-                numtxt = len('0.000000000000000')
-                format = 'E+00'
-                if len(num_str) != numtxt:
-                    cantidad = numtxt - len(num_str)
-                    for i in range(cantidad):
-                        num_str = num_str + '0'
-                num_str = '+' + num_str + format
-                return num_str
-
-        pathpen = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-        geom = LoadDataFileGeometry(pathpen)
-        path = geom.path
-        string_list = geom.string_list
-        clone = True
-
-        if clone:
-
-            # Buscamos el body detector
-            data_module = []
-            for num in range(geom.numBodys):
-                nbody = geom.GetDataBody[num+1]
-                if nbody['Type'] == 'MODULE':
-                    data_module.append([num+1,nbody['Name']])
-            data_module = np.array(data_module)
-
-            respuesta =  option_list(data_module[:,1], input_type='int', question='¿Que MODULE desea repetir?', return_type=False)
-            num_module = int(data_module[respuesta,0])
-
-            # list_detect = list(np.arange(1,13,1))
-            # num_detect =  option_list(list_detect, input_type='int', question='¿Cuantos desea agregar?', return_type=True)
-            num_detect = 12
-            # self.__circle_radius(geom, radius, plane, detect, target)
-
-            # Extraemos los datos
-            # detector = self.GetDataBody[num_module]
-            # target = self.GetDataBody[num_module+1]
-            detector = geom.GetDataBody[num_module]
-            target = geom.GetDataBody[num_module+1]
-            surface_detector = detector['Surfaces'][0]
-            surface_target = target['Surfaces'][0]
-            data_target = target['Data Surfaces'][surface_target]
-            data_detect = detector['Data Surfaces'][surface_detector]
-
-            # Definimos el angulo
-            angle = 360/num_detect * np.pi/180
-            # angle = 30 * np.pi/180
-            vpos_detect = np.array([data_detect['XSH'][0],data_detect['YSH'][0],data_detect['ZSH'][0]])
-            vpos_target = np.array([data_target['XSH'][0],data_target['YSH'][0],data_target['ZSH'][0]])
-            v_distance =  vpos_detect - vpos_target
-
-            # Radio del circulo
-            R = np.linalg.norm(v_distance)
-
-            # --------------------------------------------------
-            # Creamos el archivo con los detectores circulares
-
-            num = len(geom.blocks_bodys)
-
-            block = geom.blocks_bodys[-1]
-            new_string = string_list[:block[1]+1]
-
-            # ----
-            for n in range(1,num_detect):
-            # for n in range(1,num+1):
-                # n=1
-                # Nueva posicion del detector
-                xp = R*np.cos(angle*n)
-                yp = R*np.sin(angle*n)
-                zp = data_target['ZSH'][0]
-                vpos_new_detect = np.array([xp,yp,zp])
-
-                X_shift = vpos_target[0] - vpos_new_detect[0]
-                Y_shift = vpos_target[1] - vpos_new_detect[1]
-                Z_shift = vpos_new_detect[2] - vpos_target[2]
-
-                # Angulos
-                omega = 0
-                theta = 0
-                phi = angle*n*180/np.pi
-
-                nb = num+n+1
-                if nb < 10:
-                    line_clone = "CLONE   (   {})  Detector {} - Prism".format(num+n+1, n+2)
-                else:
-                    line_clone = "CLONE   (  {})  Detector {} - Prism".format(num+n+1, n+2)
-
-                block_text = [line_clone,
-                              "MODULE  (   {})".format(num_module),
-                              "1111111111111111111111111111111111111111111111111111111111111111",
-                              "  OMEGA=({},   0)".format(__converttotext(omega)),
-                              "  THETA=({},   0)".format(__converttotext(theta)),
-                              "    PHI=({},   0)".format(__converttotext(phi)),
-                              "X-SHIFT=({},   0)".format(__converttotext(X_shift)),
-                              "Y-SHIFT=({},   0)".format(__converttotext(Y_shift)),
-                              "Z-SHIFT=({},   0)".format(__converttotext(Z_shift)),
-                              "0000000000000000000000000000000000000000000000000000000000000000"]
-
-                for bloque in block_text:
-                    new_string.append(bloque+'\n')
-            # ----
-
-        else:
-
-            # Buscamos el body detector
-            for num in range(geom.numBodys):
-                nbody = geom.GetDataBody[num+1]
-                print(nbody['Name'])
-                if nbody['Name'].startswith('Detector') or nbody['Name'].startswith('detector'):
-                    detector = nbody
-                if nbody['Name'].startswith('Target') or nbody['Name'].startswith('target'):
-                    target = nbody
-
-            # NUMERO DE DETECTORES
-            list_detect = list(np.arange(1,13,1))
-            num_detect =  option_list(list_detect, input_type='int', question='¿Cuantos desea agregar?', return_type=True)
-            # Definimos el angulo
-            angle = 360/num_detect * np.pi/180
-
-            # TARGET
-            surfaces_target = target['Surfaces'][0]
-            data_target = target['Data Surfaces'][surfaces_target]
-            # Vector posicion del target
-            vpos_target = np.array([data_target['XSH'][0],data_target['YSH'][0],data_target['ZSH'][0]])
-
-
-            # DETECTOR
-            surfaces_detector = detector['Surfaces']
-            vpos_detect = np.array([data_detect['XSH'][0],data_detect['YSH'][0],data_detect['ZSH'][0]])
-            v_distance =  vpos_detect - vpos_target
-
-            # Radio del circulo
-            R = np.linalg.norm(v_distance)
-
-            # --------------------------------------------------
-            # Creamos el archivo con los detectores circulares
-
-            num = len(blocks_bodys)
-
-            block = blocks_bodys[-1]
-            new_string = string_list[:block[1]+1]
-
-            # ----
-            for n in range(1,num_detect):
-            # for n in range(1,num+1):
-                # n=1
-                # Nueva posicion del detector
-                xp = R*np.cos(angle*n)
-                yp = R*np.sin(angle*n)
-                zp = data_target['ZSH'][0]
-                vpos_new_detect = np.array([xp,yp,zp])
-
-                print('N={}'.format(n))
-                # Vector de translacion
-                v_translate = vpos_new_detect - vpos_detect
-                print('({})'.format(v_translate))
-                X_shift = v_translate[1] + vpos_target[0]
-                Y_shift = v_translate[0] + vpos_target[1]
-                Z_shift = v_translate[2] + vpos_target[2]
-
-                # x0 = vpos_target[0]
-                # y0 = vpos_target[1]
-                # z0 = vpos_target[2]
-                #
-                # # Definir la matriz de transformación de traslación T
-                # T = np.array([[1, 0, 0, -x0],
-                #               [0, 1, 0, -y0],
-                #               [0, 0, 1, -z0],
-                #               [0, 0, 0, 1]])
-                #
-                # # Definir la matriz de rotación R
-                # theta = angle
-                # R = np.array([[np.cos(theta), 0, np.sin(theta), 0],
-                #                 [0, 1, 0, 0],
-                #                 [-np.sin(theta), 0, np.cos(theta), 0],
-                #                 [0, 0, 0, 1]])
-                #
-                # # # Definir el vector de traslación
-                # # vector_traslacion = np.array([[1, 0, 0, 0],
-                # #                               [0, 1, 0, 0],
-                # #                               [0, 0, 1, 0],
-                # #                               [-5, 0, 0, 1]])
-                #
-                # # Calcular la matriz de transformación compuesta M
-                # M = np.matmul(R, T)
-                #
-                # # Calcular los coeficientes del plano transformado
-                # A_new, B_new, C_new, D_new = np.matmul([1, 0, 0, 0], M)
-                # #
-                # # # Verificar que el plano resultante esté orientado hacia el centro de la circunferencia
-                # normal_vector = np.array([A_new, B_new, C_new])
-                # center_vector = np.array([x0, y0, z0])
-                # if np.dot(normal_vector, center_vector) > 0:
-                #     A_new *= -1
-                #     B_new *= -1
-                #     C_new *= -1
-                #     D_new *= -1
-
-
-                # Angulos
-                omega = angle*n*180/np.pi
-                theta = 0
-                phi = 0
-
-                # block_text = ["CLONE   (   {})  Detector {} - Prism".format(num+n, n+2),
-                #               "MODULE  (   {})".format(num_module),
-                #               "1111111111111111111111111111111111111111111111111111111111111111",
-                #               "  OMEGA=( {},   0)".format(self.__converttotext(omega)),
-                #               "  THETA=( {},   0)".format(self.__converttotext(theta)),
-                #               "    PHI=( {},   0)".format(self.__converttotext(phi)),
-                #               "X-SHIFT=( {},   0)".format(self.__converttotext(X_shift)),
-                #               "Y-SHIFT=( {},   0)".format(self.__converttotext(Y_shift)),
-                #               "Z-SHIFT=( {},   0)".format(self.__converttotext(Z_shift)),
-                #               "0000000000000000000000000000000000000000000000000000000000000000"]
-                nb = num+n+1
-                if nb < 10:
-                    line_clone = "CLONE   (   {})  Detector {} - Prism".format(num+n+1, n+2)
-                else:
-                    line_clone = "CLONE   (  {})  Detector {} - Prism".format(num+n+1, n+2)
-
-                block_text = [line_clone,
-                              "MODULE  (   {})".format(num_module),
-                              "1111111111111111111111111111111111111111111111111111111111111111",
-                              "  OMEGA=({},   0)".format(__converttotext(omega)),
-                              "  THETA=({},   0)".format(__converttotext(theta)),
-                              "    PHI=({},   0)".format(__converttotext(phi)),
-                              "X-SHIFT=({},   0)".format(__converttotext(X_shift)),
-                              "Y-SHIFT=({},   0)".format(__converttotext(Y_shift)),
-                              "Z-SHIFT=({},   0)".format(__converttotext(Z_shift)),
-                              "0000000000000000000000000000000000000000000000000000000000000000"]
-
-                for bloque in block_text:
-                    new_string.append(bloque+'\n')
-            # ----
-
-        new_string.append(string_list[block[1]+1])
-
-        pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_original_1.geo')
-
-        my_file = open('{}'.format(pathfile),'w')
-        new_file_contents = "".join(new_string)
-        my_file.write(new_file_contents)
-        my_file.close()
-
-    def modify_ticknness(self, surface, change):
-
-        # Cargamos el texto de GEOMETRY
-        string_list = self.__string_list
-        path = self.path
-
-        value = surface[0]
-
-        # file=open(path)
-        # string_list = file.readlines()
-        # file.close()
-
-        for i, string in enumerate(string_list):
-            if string.find('SURFACE (   {})  '.format(int(value))) != -1:
-                for j, string in enumerate(string_list[i:]):
-                    if not string.find('000000000000000000') != -1:
-                        if string.find('Z-SHIFT') !=-1:
-                            string_list[i+j] = 'Z-SHIFT=( {},   0)\n'.format(change)
-                            break
-                    else:
-                        break
-
-
-        my_file = open('{}'.format(path),'w')
-        new_file_contents = "".join(string_list)
-        my_file.write(new_file_contents)
-        my_file.close()
-
-    def __circle_radius(self, geom, radius, plane, detect, target):
-
-        string_list = geom.string_list
-        for num in range(geom.numBodys):
-            nbody = geom.GetDataBody[num+1]
-            if nbody['Name'].startswith('Detector'):
-                body_detect = nbody
-            if nbody['Name'].startswith('Target'):
-                body_target = nbody
-
-        if detect:
-            print('Detect')
-            if plane == 'XZ':
-                print('Plane XZ')
-                for ds in body_detect['Data Surfaces'].keys():
-                    surface_body = body_detect['Data Surfaces'][ds]
-
-                    # Eje Z
-                    sb = surface_body['SURFACE'][0]
-                    if sb == 1:
-                        if surface_body['AZ'] != []:
-                            surface_body['A0'] = - 0.25
-
-                            # Modificamos el archivo con el nuevo valor.
-                            sblocks = geom.blocks_surfaces_complete[sb-1]
-                            if sblocks[0] == sb:
-                                blocks = sblocks[1]
-                                for l in range(blocks[0],blocks[1]):
-
-                                    if string_list[l].startswith('Z-SHIFT'):
-                                        string_list[l] = 'Z-SHIFT=({},   0)\n'.format(__converttotext(surface_body['A0']))
-                                        print('Plane 1')
-
-                    if sb == 2:
-                        if surface_body['AZ'] != []:
-                            surface_body['A0'] = 0.25
-
-                            # Modificamos el archivo con el nuevo valor.
-                            sblocks = geom.blocks_surfaces_complete[sb-1]
-                            if sblocks[0] == sb:
-                                blocks = sblocks[1]
-                                for l in range(blocks[0],blocks[1]):
-
-                                    if string_list[l].startswith('Z-SHIFT'):
-                                        string_list[l] = 'Z-SHIFT=({},   0)\n'.format(__converttotext(surface_body['A0']))
-                                        print('Plane 2')
-                    # Eje X
-                    if sb == 3:
-                        if surface_body['AX'] != []:
-                            surface_body['A0'] = -radius + 0.25
-
-                            # Modificamos el archivo con el nuevo valor.
-                            sblocks = geom.blocks_surfaces_complete[sb-1]
-                            if sblocks[0] == sb:
-                                blocks = sblocks[1]
-                                for l in range(blocks[0],blocks[1]):
-
-                                    if string_list[l].startswith('     A0='):
-                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
-                                        print('Plane 3')
-
-                    if sb == 4:
-                        if surface_body['AX'] != []:
-                            surface_body['A0'] = -radius - 0.25
-
-                            # Modificamos el archivo con el nuevo valor.
-                            sblocks = geom.blocks_surfaces_complete[sb-1]
-                            if sblocks[0] == sb:
-                                blocks = sblocks[1]
-                                for l in range(blocks[0],blocks[1]):
-
-                                    if string_list[l].startswith('     A0='):
-                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
-                                        print('Plane 4')
-
-                    # Eje Y
-                    if sb == 5:
-                        if surface_body['AY'] != []:
-                            surface_body['A0'] = -radius + 0.05
-
-                            # Modificamos el archivo con el nuevo valor.
-                            sblocks = geom.blocks_surfaces_complete[sb-1]
-                            if sblocks[0] == sb:
-                                blocks = sblocks[1]
-                                for l in range(blocks[0],blocks[1]):
-
-                                    if string_list[l].startswith('     A0='):
-                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
-                                        print('Plane 5')
-
-                    if sb == 6:
-                        if surface_body['AY'] != []:
-                            surface_body['A0'] = -radius - 0.05
-
-                            # Modificamos el archivo con el nuevo valor.
-                            sblocks = geom.blocks_surfaces_complete[sb-1]
-                            if sblocks[0] == sb:
-                                blocks = sblocks[1]
-                                for l in range(blocks[0],blocks[1]):
-                                    print(l)
-                                    if string_list[l].startswith('     A0='):
-                                        string_list[l] = '     A0=({},   0)\n'.format(__converttotext(surface_body['A0']))
-                                        print('Plane 6')
-
-            if plane == 'YZ':
-
-                for ds in body_detect['Data Surfaces'].keys():
-                    surface_body = body_detect['Data Surfaces'][ds]
-                    # Eje Z
-                    if surface_body['SURFACE'][0] == 1:
-                        if surface_body['AZ'] != []:
-                            surface_body['A0'] = - 0.25
-                    if surface_body['SURFACE'][0] == 2:
-                        if surface_body['AZ'] != []:
-                            surface_body['A0'] = 0.25
-                    # Eje X
-                    if surface_body['SURFACE'][0] == 3:
-                        if surface_body['AX'] != []:
-                            surface_body['A0'] = radius - 0.05
-                    if surface_body['SURFACE'][0] == 4:
-                        if surface_body['AX'] != []:
-                            surface_body['A0'] = radius + 0.05
-                    # Eje Y
-                    if surface_body['SURFACE'][0] == 5:
-                        if surface_body['AY'] != []:
-                            surface_body['A0'] = radius - 0.25
-                    if surface_body['SURFACE'][0] == 6:
-                        if surface_body['AY'] != []:
-                            surface_body['A0'] = radius + 0.25
-
-            if plane == 'XY':
-                print('Continuara....')
-
-        if target:
-
-            print('Continuara.....')
-
-        pathfile = os.path.join('D:\\', *path.split('\\')[1:-1], 'detector_1.geo')
-        my_file = open('{}'.format(pathfile),'w')
-        new_file_contents = "".join(string_list)
-        my_file.write(new_file_contents)
-        my_file.close()
 
 class CircleDetectors():
 
@@ -1549,12 +2487,11 @@ class CircleDetectors():
     # ----
 
 # # PRIMERA FORMA
-pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-cdetectors = CircleDetectors(pathfolder)
-
+# pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
+# cdetectors = CircleDetectors(pathfolder)
+#
 
 # # GUI PARA CINTURON DE DETECTORES
-
 
 def class_name(o):
     return o.metaObject().className()
@@ -1570,6 +2507,8 @@ def style_names(list_name):
 
     if list_name == 'plane':
         style_list = ['XY', 'XZ', 'YZ']
+    if list_name == 'materials':
+        style_list = ['CdTe', 'Ge', 'Si']
 
     result = []
     for style in style_list:
@@ -1578,31 +2517,6 @@ def style_names(list_name):
         else:
             result.append(style)
     return result
-
-
-
-
-class WidgetPlotly(QtWidgets.QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.button = QtWidgets.QPushButton('Plot', self)
-        self.browser = QWebEngineView(self)
-
-        vlayout = QtWidgets.QVBoxLayout(self)
-        vlayout.addWidget(self.button, alignment=Qt.AlignHCenter)
-        vlayout.addWidget(self.browser)
-
-        self.button.clicked.connect(self.show_graph)
-        self.resize(1000,800)
-
-    def show_graph(self):
-        df = px.data.tips()
-        fig = px.box(df, x="day", y="total_bill", color="smoker")
-        fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
-        self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
-
-
-
 
 class Plot3DView(QWidget):
 
@@ -1630,6 +2544,11 @@ class Plot3DView(QWidget):
         init_widget(self._plane, "styleComboBox")
         self._plane.addItems(style_names(list_name='plane'))
 
+        # # Opciones para ver datos procesados
+        self._materials = QComboBox()
+        init_widget(self._materials, "styleComboBox")
+        self._materials.addItems(style_names(list_name='materials'))
+
         # Elige una particula para visualizar
         self._nplane = QDoubleSpinBox()
         self._nplane.setPrefix("")
@@ -1643,17 +2562,17 @@ class Plot3DView(QWidget):
         init_widget(self._radio, "radio")
 
         self._xdim = QDoubleSpinBox()
-        self._xdim.setPrefix("X")
+        self._xdim.setPrefix("X: ")
         self._xdim.setValue(0)
         init_widget(self._xdim, "xdim")
 
         self._ydim = QDoubleSpinBox()
-        self._ydim.setPrefix("Y")
+        self._ydim.setPrefix("Y: ")
         self._ydim.setValue(0)
         init_widget(self._ydim, "ydim")
 
         self._zdim = QDoubleSpinBox()
-        self._zdim.setPrefix("Z")
+        self._zdim.setPrefix("Z: ")
         self._zdim.setValue(0)
         init_widget(self._zdim, "zdim")
 
@@ -1661,12 +2580,16 @@ class Plot3DView(QWidget):
         self.button_view = QPushButton("View")
         init_widget(self.button_view, "view_label")
 
+        self.button_text = QPushButton("Generar")
+        init_widget(self.button_text, "generar_label")
+
         # (2) Agregamos widgets al panel
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
         self.llayout.addWidget(QLabel(""))
-        self.label = QLabel("    CONFIGURACIÓN DE ANILLOS DETECTORES")
-        self.label.setStyleSheet("border: 2px solid black; position: center;")
+        self.label1 = QLabel("CONFIGURACIÓN VISUAL DE ANILLOS DETECTORES")
+        self.label1.setStyleSheet("border: 2px solid gray; position: center;")
+        self.llayout.addWidget(self.label1)
 
         self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Plano:"))
@@ -1675,6 +2598,9 @@ class Plot3DView(QWidget):
         self.llayout.addWidget(QLabel("Número de detectores:"))
         self.llayout.addWidget(self._nplane)
         self.llayout.addWidget(QLabel(""))
+        self.llayout.addWidget(QLabel("Material:"))
+        self.llayout.addWidget(self._materials)
+        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Radio del cinturon:"))
         self.llayout.addWidget(self._radio)
         self.llayout.addWidget(QLabel(""))
@@ -1682,13 +2608,22 @@ class Plot3DView(QWidget):
         self.llayout.addWidget(self._xdim)
         self.llayout.addWidget(self._ydim)
         self.llayout.addWidget(self._zdim)
-        self.llayout.addWidget(QLabel("------------------------"))
+        self.llayout.addWidget(QLabel("Visualizar geometría"))
+        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(self.button_view)
+        self.llayout.addWidget(QLabel(""))
+        self.label2 = QLabel("               ARCHIVO DE GEOMETRIA-PENELOPE")
+        self.label2.setStyleSheet("border: 2px solid gray; position: center;")
+        self.llayout.addWidget(self.label2)
+        self.llayout.addWidget(QLabel(""))
+        self.llayout.addWidget(self.button_text)
+        self.llayout.addWidget(QLabel(""))
+        self.llayout.addStretch()
 
 
         # (3) Agregamos las conexiones
         self.button_view.clicked.connect(self.__ViewPlanes)
-
+        self.button_text.clicked.connect(self.__ConstructInput)
 
         # --------------------------------------------------
         # # Panel DERECHO - Definición de configuraciones
@@ -1981,60 +2916,8 @@ class Plot3DView(QWidget):
 
             return Z, verts
 
-    def __ViewPlanes(self):
+    # ======== GENERADOR DE GEOMETRIA =========
 
-        nplanes = int(self._nplane.value())
-        plane = str(self._plane.currentText())
-        radio = self._radio.value()
-        dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
-
-        angle = 360/nplanes
-        list_bodys = []
-        for n in range(1,nplanes):
-
-            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=angle*n, radio=radio, dimensions=dimensions)
-
-            x = Z[:,0]
-            y = Z[:,1]
-            z = Z[:,2]
-            i= [7, 0, 0, 0, 4, 4, 6, 1, 4, 0, 3, 6]
-            j= [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
-            k= [0, 7, 2, 3, 6, 7, 1, 6, 5, 5, 7, 2]
-
-
-            list_bodys.append(go.Mesh3d(x=x, y=y, z=z, alphahull = 0,
-                                        # i=i, j=j, k=k,
-                                        opacity=0.5,
-                                        color='blue'))
-
-        # Datos para el eje x
-        list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
-
-        # Datos para el eje y
-        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
-
-        # Datos para el eje z
-        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
-
-
-        layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
-        # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
-        #                   scene = dict(xaxis=dict(range=[-10,10]),
-        #                                yaxis=dict(range=[-10,10]),
-        #                                zaxis=dict(range=[-10,10])))
-
-        # df = px.data.tips()
-        # fig = px.box(df, x="day", y="total_bill", color="smoker")
-        # fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
-        #
-
-        fig = go.Figure(data = list_bodys, layout = layout)
-        # fig.update_layout(scene_camera_eye_z= 0.55)
-        fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
-        self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
-        # fig.show()
-
-    # Crear INPUT con el cinturon de detectores
     def __converttotext(self, c):
         if c > 0:
             num_str = '{:.7f}'.format(c)
@@ -2086,7 +2969,15 @@ class Plot3DView(QWidget):
 
         return a,b,c,d
 
-    def __ConstructInput(self, nplanes, plane, materials, radio, dimensions, path):
+    def __ConstructInput(self):
+
+        nplanes = int(self._nplane.value())+1
+        plane = str(self._plane.currentText())
+        material = str(self._materials.currentText())
+        materials = np.array([[1,material]])
+
+        radio = self._radio.value()
+        dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
 
         # # Creamos una lista que contenga el script de INPUT
         string_list = []
@@ -2232,50 +3123,84 @@ class Plot3DView(QWidget):
         string_list.append("END      0000000000000000000000000000000000000000000000000000000")
 
         self.geometryFile = string_list
+        self.__save_file(string_list)
 
-        pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_simulated.geo')
+    def __save_file(self, string_list):
 
-        my_file = open('{}'.format(pathfile),'w')
-        new_file_contents = "".join(string_list)
-        my_file.write(new_file_contents)
-        my_file.close()
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfile, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "",
+                                                  "Archivos de texto (*.dat);;Todos los archivos (*)",
+                                                  options=opciones)
+
+        basename = os.path.basename(pathfile)
+        if basename.split('.')[-1] != "geo":
+            msgBox = QMessageBox()
+            msgBox.setText("No se puede cargar este formato de archivos.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+        else:
+            # pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_simulated.geo')
+
+            my_file = open('{}'.format(pathfile),'w')
+            new_file_contents = "".join(string_list)
+            my_file.write(new_file_contents)
+            my_file.close()
+
+    # ========= TYPES GRAPH ===========
+
+    def __ViewPlanes(self):
+
+        nplanes = int(self._nplane.value())+1
+        plane = str(self._plane.currentText())
+        radio = self._radio.value()
+        dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
+
+        angle = 360/nplanes
+        list_bodys = []
+        for n in range(1,nplanes):
+
+            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=angle*n, radio=radio, dimensions=dimensions)
+
+            x = Z[:,0]
+            y = Z[:,1]
+            z = Z[:,2]
+            i= [7, 0, 0, 0, 4, 4, 6, 1, 4, 0, 3, 6]
+            j= [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
+            k= [0, 7, 2, 3, 6, 7, 1, 6, 5, 5, 7, 2]
 
 
-    # ========= TYPES PLOTS ===========
+            list_bodys.append(go.Mesh3d(x=x, y=y, z=z, alphahull = 0,
+                                        # i=i, j=j, k=k,
+                                        opacity=0.5,
+                                        color='blue'))
 
-    def __ViewPlot(self):
+        # Datos para el eje x
+        list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
 
-        # (1) Extraemos los datos
-        self.__nparticle = self._npart.value()
-        self.__type_plot = str(self._style_plot.currentText())
+        # Datos para el eje y
+        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
 
-        if self.__type_plot == 'Primaries and Dispersions':
-
-            self.can.deleteLater()
-
-            # Procesamos los datos para primarios y secundarios
-            data_processed = DataProcessed(self.data_base, npart=self.__nparticle, type_plot=self.__type_plot)
-
-            data_base = []
-            data_base.append(data_processed.primarios)
-            data_base.append(data_processed.secundarios)
-
-            self.__view_event_type(data_base)
-
-        elif self.__type_plot == 'Ionizations':
-
-            self.can.deleteLater()
-
-            # Procesamos los datos para primarios y secundarios
-            data_processed = DataProcessed(self.data_base, npart=self.__nparticle, type_plot=self.__type_plot)
-
-            data_base = []
-            data_base.append(data_processed.ionizations)
-            data_base.append(data_processed.no_ionizations)
-
-            self.__view_particle_ionizations(data_base)
+        # Datos para el eje z
+        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
 
 
+        layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
+        # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
+        #                   scene = dict(xaxis=dict(range=[-10,10]),
+        #                                yaxis=dict(range=[-10,10]),
+        #                                zaxis=dict(range=[-10,10])))
+
+        # df = px.data.tips()
+        # fig = px.box(df, x="day", y="total_bill", color="smoker")
+        # fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
+        #
+
+        fig = go.Figure(data = list_bodys, layout = layout)
+        # fig.update_layout(scene_camera_eye_z= 0.55)
+        fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
+        self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
+        # fig.show()
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
@@ -2301,14 +3226,35 @@ class VentanaPrincipal(QMainWindow):
         aboutQtAct = QAction("About &Qt", self, triggered=qApp.aboutQt)
         aboutMenu.addAction(aboutQtAct)
 
+        # (1.3) Barra de herramientas
+        toolBar = QToolBar()
+        self.addToolBar(toolBar)
+        # Barra de botones
+        inputAction = QAction('Input', self, shortcut="Ctrl+V", triggered=self.input)
+        geometryAction = QAction("Geometría", self, shortcut="Ctrl+L", triggered=self.geometry)
+
+        # Agregamos las acciones
+        toolBar.addAction(inputAction)
+        toolBar.addAction(geometryAction)
+
         # (2) VENTANA PRINCIPAL
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
+
+    def geometry(self):
 
         self.mpl_can = Plot3DView()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.mpl_can)
         self.central_widget.setCurrentWidget(self.mpl_can)
+
+    def input(self):
+
+        self.mpl_can = Plot3DView()
+        # la agregamos a la ventana principal
+        self.central_widget.addWidget(self.mpl_can)
+        self.central_widget.setCurrentWidget(self.mpl_can)
+
 
     def load_file(self):
 
@@ -2363,367 +3309,3 @@ if __name__ == '__main__':
     mainWin.show()
 
     sys.exit(app.exec())
-
-
-
-# # # SEGUNDA FORMA
-# def extract_geometric_vertices_from_detector(data, several_elements=True):
-#
-#     def data_for_cylinder(data_list,radius):
-#
-#         if len(data_list[0]) != 1:
-#             center_y = data_list[1][0]
-#             center_z = data_list[2][0]
-#
-#             x = np.linspace(data_list[0][0], data_list[0][1], 50)
-#             theta = np.linspace(0, 2*np.pi, 50)
-#             theta_grid, x_grid=np.meshgrid(theta, x)
-#             y_grid = radius*np.cos(theta_grid) + center_y
-#             z_grid = radius*np.sin(theta_grid) + center_z
-#
-#             # Vector director del eje.
-#             p0 = np.array([data_list[0][0],data_list[1][0],data_list[2][0]])
-#             p1 = np.array([data_list[0][1],data_list[1][0],data_list[2][0]])
-#             v = p1 - p0
-#             # Calculamos la magnitud del vector.
-#             mag = np.linalg.norm(v)
-#             # Vector unitario en la direccion del eje.
-#             v = v / mag
-#             # Otro vector con distinta direccion
-#             not_v = np.array([0, 1, 0])
-#             # Vector perpendicular a v
-#             n1 = np.cross(v, not_v)
-#             # Normalizamos n1
-#             n1 /= np.linalg.norm(n1)
-#
-#             # Vector unitario perpendicular a v y n1
-#             n2 = np.cross(v, n1)
-#
-#             rsample = np.linspace(0, radius, 2)
-#             rsample,theta = np.meshgrid(rsample, theta)
-#
-#             # "Bottom"
-#             tapa_1 = [p0[i] + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
-#
-#             # "Top"
-#             tapa_2 = [p0[i] + v[i]*mag + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
-#
-#         if len(data_list[1]) != 1:
-#             center_x = data_list[0][0]
-#             center_z = data_list[2][0]
-#
-#             y = np.linspace(data_list[1][0], data_list[1][1], 50)
-#             theta = np.linspace(0, 2*np.pi, 50)
-#             theta_grid, y_grid=np.meshgrid(theta, y)
-#             x_grid = radius*np.cos(theta_grid) + center_x
-#             z_grid = radius*np.sin(theta_grid) + center_z
-#
-#         if len(data_list[1]) != 1:
-#             center_x = data_list[0][0]
-#             center_y = data_list[1][0]
-#
-#             z = np.linspace(data_list[2][0], data_list[2][1], 50)
-#             theta = np.linspace(0, 2*np.pi, 50)
-#             theta_grid, z_grid=np.meshgrid(theta, z)
-#             x_grid = radius*np.cos(theta_grid) + center_x
-#             y_grid = radius*np.sin(theta_grid) + center_y
-#
-#         return x_grid,y_grid,z_grid,tapa_1,tapa_2
-#
-#     def data_for_prism(data_list):
-#         vertex_coord = list(itertools.product(*data_list))
-#         points = np.array(vertex_coord)
-#         matrix = [[1,0,0],[0,1,0],[0,0,1]]
-#         Z = np.zeros((8,3))
-#         for i in range(len(points)):
-#             Z[i,:] = np.dot(points[i,:],matrix)
-#         # Lista de las caras del poligono que forma el detector.
-#         verts = [[Z[0],Z[1],Z[3],Z[2]],
-#                  [Z[3],Z[2],Z[6],Z[7]],
-#                  [Z[6],Z[7],Z[5],Z[4]],
-#                  [Z[5],Z[4],Z[0],Z[1]],
-#                  [Z[1],Z[3],Z[7],Z[5]],
-#                  [Z[0],Z[2],Z[6],Z[4]]]
-#         return Z, verts
-#
-#     def data_for_sphere(data_list, r):
-#
-#         # if not data_list:
-#
-#         center_x = data_list[0][0]
-#         center_y = data_list[1][0]
-#         center_z = data_list[2][0]
-#
-#         resolution = 100
-#         u, v = np.mgrid[0:2*np.pi:resolution*2j, -np.pi:np.pi:resolution*1j]
-#         # u = np.linspace(0, 2 * np.pi, 100)
-#         # v = np.linspace(0, np.pi, 100)
-#
-#         x = r*3* np.cos(u)* np.sin(v) + center_x
-#         y = r*3* np.sin(u)* np.sin(v) + center_y
-#         z = r*3* np.cos(v) + center_z
-#
-#         return x,y,z
-#
-#     # --------------------------------------------------------------------------
-#     # (1) Ubicamos el archivo al cual vamos extraer los datos
-#     dict_mat = {k:[] for k in ['AXX','AXY','AXZ','AYY','AYZ','AZZ']}
-#     dict_pos = {k:[] for k in ['AX','AY','AZ']}
-#     dict_shi =  {k:[] for k in ['XSH','YSH','ZSH']}
-#     dict_rad = {k:[] for k in ['XSC','YSC','ZSC']}
-#
-#
-#     surface = data['Data Surfaces']
-#     for num in surface.keys():
-#         if surface[num]['AX'] != []:
-#             if surface[num]['A0'] != []:
-#                 dict_pos['AX'].append(surface[num]['A0'][0])
-#             else:
-#                 dict_pos['AX'].append(surface[num]['AX'][0])
-#
-#         if surface[num]['AY'] != []:
-#             if surface[num]['A0'] != []:
-#                 dict_pos['AY'].append(surface[num]['A0'][0])
-#             else:
-#                 dict_pos['AY'].append(surface[num]['AY'][0])
-#
-#         if surface[num]['AZ'] != []:
-#             if surface[num]['A0'] != []:
-#                 dict_pos['AZ'].append(surface[num]['A0'][0])
-#             else:
-#                 dict_pos['AZ'].append(surface[num]['AZ'][0])
-#
-#         if surface[num]['XSC'] != []:
-#             dict_rad['XSC'].append(surface[num]['XSC'][0])
-#         if surface[num]['YSC'] != []:
-#             dict_rad['YSC'].append(surface[num]['YSC'][0])
-#         if surface[num]['ZSC'] != []:
-#             dict_rad['ZSC'].append(surface[num]['ZSC'][0])
-#
-#         if surface[num]['XSH'] != []:
-#             dict_pos['AX'].append(surface[num]['XSH'][0])
-#         if surface[num]['YSH'] != []:
-#             dict_pos['AY'].append(surface[num]['YSH'][0])
-#         if surface[num]['ZSH'] != []:
-#             dict_pos['AZ'].append(surface[num]['ZSH'][0])
-#
-#     type_body = data['Geometry']
-#
-#     # --- Ordenamos las coordenadas de menor a mayor para la posiciones
-#     dict_pos['AX'].sort()
-#     dict_pos['AY'].sort()
-#     dict_pos['AZ'].sort()
-#
-#
-#     data_list = []
-#     data_list.append(dict_pos['AX'])
-#     data_list.append(dict_pos['AY'])
-#     data_list.append(dict_pos['AZ'])
-#     # print(data_list)
-#
-#     if type_body == 'Cylinder':
-#
-#         rad_list = []
-#         rad_list.append(dict_rad['XSC'])
-#         rad_list.append(dict_rad['YSC'])
-#         rad_list.append(dict_rad['ZSC'])
-#
-#         if len(rad_list[0]) == 1:
-#             R = rad_list[0][0]
-#         if len(rad_list[1]) == 1:
-#             R = rad_list[1][0]
-#         if len(rad_list[2]) == 1:
-#             R = rad_list[2][0]
-#
-#         data_graph = data_for_cylinder(data_list,R)
-#
-#         if len(data_list[0]) != 1:
-#             vdir = data_list[0]
-#         if len(data_list[1]) != 1:
-#             vdir = data_list[1]
-#         if len(data_list[2]) != 1:
-#             vdir = data_list[2]
-#
-#         return data_graph, type_body
-#
-#     elif type_body == 'Prism':
-#
-#         data_graph = data_for_prism(data_list)
-#
-#         normals = []
-#         d=[]
-#         surface = data['Data Surfaces']
-#         for num in surface.keys():
-#             dict_pos = {k:[] for k in ['AX','AY','AZ']}
-#
-#             if surface[num]['AX'] != []:
-#                 AX = surface[num]['AX'][0]
-#             else:
-#                 AX = 0.0
-#             if surface[num]['AY'] != []:
-#                 AY = surface[num]['AY'][0]
-#             else:
-#                 AY = 0.0
-#             if surface[num]['AZ'] != []:
-#                 AZ = surface[num]['AZ'][0]
-#             else:
-#                 AZ = 0.0
-#             if surface[num]['A0'] != []:
-#                 A0 = surface[num]['A0'][0]
-#             else:
-#                 A0 = 0.0
-#
-#             if surface[num]['XSH'] != []:
-#                 AX = surface[num]['XSH'][0]
-#                 A0 = 1.0
-#             if surface[num]['YSH'] != []:
-#                 AY = surface[num]['YSH'][0]
-#                 A0 = 1.0
-#             if surface[num]['ZSH'] != []:
-#                 A0 = 1.0
-#                 AZ = surface[num]['ZSH'][0]
-#
-#
-#         matrix = [[1,0,0],[0,1,0],[0,0,1]]
-#         Z = np.zeros((8,3))
-#         for i in range(len(points)):
-#             Z[i,:] = np.dot(points[i,:],matrix)
-#         # Lista de las caras del poligono que forma el detector.
-#         verts = [[Z[0],Z[1],Z[3],Z[2]],
-#                  [Z[3],Z[2],Z[6],Z[7]],
-#                  [Z[6],Z[7],Z[5],Z[4]],
-#                  [Z[5],Z[4],Z[0],Z[1]],
-#                  [Z[1],Z[3],Z[7],Z[5]],
-#                  [Z[0],Z[2],Z[6],Z[4]]]
-#
-#         data_graph = Z, verts
-#
-#
-#         return data_graph, type_body
-#     elif type_body == 'Sphere':
-#
-#         rad_list = []
-#         rad_list.append(dict_rad['XSC'])
-#         rad_list.append(dict_rad['YSC'])
-#         rad_list.append(dict_rad['ZSC'])
-#
-#         # print(rad_list)
-#
-#         if len(rad_list[0]) == 1:
-#             R = rad_list[0][0]
-#         if len(rad_list[1]) == 1:
-#             R = rad_list[1][0]
-#         if len(rad_list[2]) == 1:
-#             R = rad_list[2][0]
-#
-#         # print(R)
-#
-#         data_graph = data_for_sphere(data_list,R)
-#
-#         return data_graph, type_body
-#
-# pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-#
-# # pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\Imaging_XFCT_microCT\Code\RUN\penmain_2018"
-# # pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-# geom = LoadDataFileGeometry(pathfolder)
-#
-# bodysName = [geom.BodysNames]
-# num_bodys = 1
-#
-# print_list_columns(geom.BodysNames, cols=2)
-# print('\n')
-#
-# list_num = geom.GetDataBody.keys()
-#
-# list_bodys = []
-# for i in list(list_num):
-#
-#     # respuesta = option_list(answer_list=geom.BodysNames, input_type='int', question='¿Que objeto desea agregar?', return_type=True, print_list=False)
-#     dbody = geom.GetDataBody[i]
-#     if dbody['Type'] != 'MODULE':
-#         data_graph, type_body = extract_geometric_vertices_from_detector(dbody)
-#
-#         if type_body == 'Prism':
-#             Z, verts = data_graph
-#             x = Z[:,0]
-#             y = Z[:,1]
-#             z = Z[:,2]
-#             i= [7, 0, 0, 0, 4, 4, 6, 1, 4, 0, 3, 6]
-#             j= [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
-#             k= [0, 7, 2, 3, 6, 7, 1, 6, 5, 5, 7, 2]
-#
-#
-#             list_bodys.append(go.Mesh3d(x=x, y=y, z=z, alphahull = 0,
-#                                         # i=i, j=j, k=k,
-#                                         opacity=0.5,
-#                                         color='blue'))
-#
-#
-#         if type_body == 'Cylinder':
-#
-#             # Extraemos los datos del cilindro
-#             Xc,Yc,Zc,tapa_1,tapa_2 = data_graph
-#             X1,Y1,Z1 = tapa_1
-#             X2,Y2,Z2 = tapa_2
-#
-#             colorscale = [[0, 'blue'],
-#                         [1, 'blue']]
-#
-#             # Superficie del cilindro
-#             list_bodys.append(go.Surface(x=Xc, y=Yc, z=Zc,
-#                              colorscale = colorscale,
-#                              showscale=False,
-#                              opacity=0.5))
-#
-#             # Superficie circulares
-#             list_bodys.append(go.Surface(x=X1, y=Y1, z=Z1,
-#                              colorscale = colorscale,
-#                              showscale=False,
-#                              opacity=0.5))
-#
-#             list_bodys.append(go.Surface(x=X2, y=Y2, z=Z2,
-#                              colorscale = colorscale,
-#                              showscale=False,
-#                              opacity=0.5))
-#
-#             # # Superficie circulares
-#             # list_bodys.append(go.Scatter3d(x = X1.tolist()+[None]+X2.tolist(),
-#             #                         y = Y1.tolist()+[None]+Y2.tolist(),
-#             #                         z = Z1.tolist()+[None]+Z2.tolist(),
-#             #                         # mode ='lines',
-#             #                         line = dict(color='blue', width=2),
-#             #                         opacity =0.55, showlegend=True))
-#
-#
-#         if type_body == 'Sphere':
-#             x,y,z = data_graph
-#             colorscale = [[0, 'blue'],
-#                           [1, 'blue']]
-#             list_bodys.append(go.Surface(x=x, y=y, z=z,
-#                              colorscale = colorscale,
-#                              showscale=False,
-#                              opacity=0.5))
-#
-#
-# # Datos para el eje x
-# list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
-#
-# # Datos para el eje y
-# list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
-#
-# # Datos para el eje z
-# list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
-#
-#
-# layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
-# # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
-# #                   scene = dict(xaxis=dict(range=[-10,10]),
-# #                                yaxis=dict(range=[-10,10]),
-# #                                zaxis=dict(range=[-10,10])))
-#
-# fig = go.Figure(data = list_bodys, layout = layout)
-# # fig.update_layout(scene_camera_eye_z= 0.55)
-# fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
-#
-# fig.show()
