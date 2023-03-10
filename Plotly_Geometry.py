@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 import plotly.graph_objects as go
 from GeomView.main import MainWindow
@@ -1552,6 +1553,33 @@ pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\Simula
 cdetectors = CircleDetectors(pathfolder)
 
 
+# # GUI PARA CINTURON DE DETECTORES
+
+
+def class_name(o):
+    return o.metaObject().className()
+
+def init_widget(w, name):
+    """Init a widget for the gallery, give it a tooltip showing the
+       class name"""
+    w.setObjectName(name)
+    w.setToolTip(class_name(w))
+
+def style_names(list_name):
+    """Return a list of styles, default platform style first"""
+
+    if list_name == 'plane':
+        style_list = ['XY', 'XZ', 'YZ']
+
+    result = []
+    for style in style_list:
+        if style.lower() == style_list:
+            result.insert(0, style)
+        else:
+            result.append(style)
+    return result
+
+
 
 
 class WidgetPlotly(QtWidgets.QWidget):
@@ -1578,14 +1606,8 @@ class WidgetPlotly(QtWidgets.QWidget):
 
 class Plot3DView(QWidget):
 
-    def __init__(self, parent=None, data=None):
-        super(Plot3DView, self).__init__(parent)
-
-        self.data_base = data
-
-        self.__nsegments = None
-        self.__nparticle = None
-        self.__method_best = None
+    def __init__(self):
+        super(Plot3DView, self).__init__()
 
         self.__Layaout_Principal()
 
@@ -1604,117 +1626,622 @@ class Plot3DView(QWidget):
         # (1) Creamos y definimos caracteristicas de los widgets
 
         # # Opciones para ver datos procesados
-        self._style_plot = QComboBox()
-        init_widget(self._style_plot, "styleComboBox")
-        self._style_plot.addItems(style_names(list_name='type_plot'))
+        self._plane = QComboBox()
+        init_widget(self._plane, "styleComboBox")
+        self._plane.addItems(style_names(list_name='plane'))
 
         # Elige una particula para visualizar
-        self._npart = QDoubleSpinBox()
-        self._npart.setPrefix("")
-        self._npart.setValue(0)
-        init_widget(self._npart, "primario")
+        self._nplane = QDoubleSpinBox()
+        self._nplane.setPrefix("")
+        self._nplane.setValue(0)
+        init_widget(self._nplane, "ndetect")
+
+        # Elige una particula para visualizar
+        self._radio = QDoubleSpinBox()
+        self._radio.setPrefix("")
+        self._radio.setValue(0)
+        init_widget(self._radio, "radio")
+
+        self._xdim = QDoubleSpinBox()
+        self._xdim.setPrefix("X")
+        self._xdim.setValue(0)
+        init_widget(self._xdim, "xdim")
+
+        self._ydim = QDoubleSpinBox()
+        self._ydim.setPrefix("Y")
+        self._ydim.setValue(0)
+        init_widget(self._ydim, "ydim")
+
+        self._zdim = QDoubleSpinBox()
+        self._zdim.setPrefix("Z")
+        self._zdim.setValue(0)
+        init_widget(self._zdim, "zdim")
 
         # Boton de ejecución para visualizar el plot elegido
-        self.button_view1 = QPushButton("View")
-        init_widget(self.button_view1, "view_label1")
-
-        # # Opciones para ver datos procesados
-        self._style_method = QComboBox()
-        init_widget(self._style_method, "styleComboBox")
-        self._style_method.addItems(style_names(list_name='type_method'))
-
-        # Elige el numero de segmentos
-        self._nseg = QDoubleSpinBox()
-        self._nseg.setPrefix("")
-        self._nseg.setValue(0)
-        init_widget(self._nseg, "segments")
-
-        # Boton de ejecución para visualizar el plot elegido
-        self.button_view2 = QPushButton("View")
-        init_widget(self.button_view2, "view_label2")
-
-        # # Opciones para ver resultados
-
-        self._style_results = QComboBox()
-        init_widget(self._style_results, "styleComboBox")
-        self._style_results.addItems(style_names(list_name='type_results'))
-
-        # # Opciones para ver METODOS
-        self._method = QComboBox()
-        init_widget(self._method, "styleComboBox")
-        self._method.addItems(style_names(list_name='methods'))
-
-        # Boton de ejecución para visualizar el plot elegido
-        self.button_view3 = QPushButton("View")
-        init_widget(self.button_view3, "view_label3")
-
-        # -----------------------------------------------------
-        # Boton de ejecución para visualizar el plot elegido
-        self.button_view4 = QPushButton("View")
-        init_widget(self.button_view4, "view_label4")
-
-        # Boton de ejecución para armar INPUT TCAD
-        self.button3 = QPushButton("Assemble TCAD Input")
-        init_widget(self.button3, "armar_tcad")
+        self.button_view = QPushButton("View")
+        init_widget(self.button_view, "view_label")
 
         # (2) Agregamos widgets al panel
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
         self.llayout.addWidget(QLabel(""))
-        self.label = QLabel("    MC-TCAD CONFIGURATION")
+        self.label = QLabel("    CONFIGURACIÓN DE ANILLOS DETECTORES")
         self.label.setStyleSheet("border: 2px solid black; position: center;")
-        self.llayout.addWidget(self.label)
+
         self.llayout.addWidget(QLabel(""))
-        self.llayout.addWidget(QLabel("Primary:"))
-        self.llayout.addWidget(self._npart)
-
-        self.llayout.addWidget(QLabel("------------------------"))
-
-        self.llayout.addWidget(QLabel("Processed data"))
-        self.llayout.addWidget(self._style_plot)
-        self.llayout.addWidget(self.button_view1)
-
-        self.llayout.addWidget(QLabel("------------------------"))
-
-        self.llayout.addWidget(QLabel("Linear fit techniques"))
-        self.llayout.addWidget(QLabel("Techniques"))
-        self.llayout.addWidget(self._style_method)
-        self.llayout.addWidget(QLabel("Number of segments:"))
-        self.llayout.addWidget(self._nseg)
-        self.llayout.addWidget(self.button_view2)
-
-        self.llayout.addWidget(QLabel("------------------------"))
-
-        self.llayout.addWidget(QLabel("LET by techniques"))
-        self.llayout.addWidget(QLabel("Select method:"))
-        self.llayout.addWidget(self._method)
-        self.llayout.addWidget(self.button_view3)
-
-        self.llayout.addWidget(QLabel("------------------------"))
-
-        self.llayout.addWidget(QLabel("Automated method"))
-        self.llayout.addWidget(self.button_view4)
+        self.llayout.addWidget(QLabel("Plano:"))
+        self.llayout.addWidget(self._plane)
         self.llayout.addWidget(QLabel(""))
-        self.llayout.addWidget(self.button3)
+        self.llayout.addWidget(QLabel("Número de detectores:"))
+        self.llayout.addWidget(self._nplane)
+        self.llayout.addWidget(QLabel(""))
+        self.llayout.addWidget(QLabel("Radio del cinturon:"))
+        self.llayout.addWidget(self._radio)
+        self.llayout.addWidget(QLabel(""))
+        self.llayout.addWidget(QLabel("Dimensiones de los detectores:"))
+        self.llayout.addWidget(self._xdim)
+        self.llayout.addWidget(self._ydim)
+        self.llayout.addWidget(self._zdim)
+        self.llayout.addWidget(QLabel("------------------------"))
+        self.llayout.addWidget(self.button_view)
 
 
         # (3) Agregamos las conexiones
-        self.button_view1.clicked.connect(self.__ViewPlot)
-        self.button_view2.clicked.connect(self.__ViewMethod)
-        self.button_view3.clicked.connect(self.__ViewLet)
-        self.button_view4.clicked.connect(self.__ViewResults)
-        self.button3.clicked.connect(self.__CreateInputTCAD)
+        self.button_view.clicked.connect(self.__ViewPlanes)
+
 
         # --------------------------------------------------
         # # Panel DERECHO - Definición de configuraciones
 
         self.cllayout = QVBoxLayout()
         self.cllayout.setContentsMargins(1, 1, 1, 1)
-        self.fig = Figure(figsize=(2, 2))
-        self.can = FigureCanvasQTAgg(self.fig)
-        self.cllayout.addWidget(self.can)
+        self.browser = QWebEngineView(self)
+        self.cllayout.addWidget(self.browser)
 
-    # # ========= TYPES PLOTS ===========
+    # ========= FUNCIONES DE CALCULO ==========
+
+    def __PutTogetherPlanes(self, plane, alpha, radio, dimensions):
+
+        xdim, ydim, zdim = dimensions
+
+        # Definimos el plano
+        if plane == 'XY':
+
+            vplane = np.array([0,0,1])
+
+            # Definir el angulo
+            angle = alpha * np.pi/180
+            # Definimos el vector normal al plano del paralepipedo
+            vnorm_x = np.cos(angle)
+            vnorm_y = np.sin(angle)
+            vnorm_z = 0
+            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
+            # vp1 = vp1/np.linalg.norm(vp1)
+
+            # Definimos un vector perpendicular al plano y al plano del paralepipedo
+            vp2 = np.cross(vplane,vp1)
+            vp2 = vp2/np.linalg.norm(vp2)
+
+            # Definimos otro vector perpendicular
+            vp3 = np.cross(vp1,vp2)
+            vp3 = vp3/np.linalg.norm(vp3)
+
+            # Multiplicamos los vectores para que tengan las dimensiones del detectors
+            vp1 = vp1 * zdim    # (cm)
+            vp2 = vp2 * xdim    # (cm)
+            vp3 = vp3 * ydim    # (cm)
+            vp4 = vp1 + vp2
+            vp5 = vp1 + vp3
+            vp6 = vp2 + vp3
+            vp7 = vp1 + vp2 + vp3
+            vp8 = np.array([0.0,0.0,0.0])
+
+            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
+            # Traslada los vértices al centro de coordenadas
+            vp_mean = np.mean(vp, axis=0)
+            vp = vp - vp_mean
+
+            vp = vp + vp1/np.linalg.norm(vp1) * radio
+            # vp = vp - np.array([radio,radio,0])
+            Z = vp
+
+            # Los dos primeros --> X
+            # Los dos segundos --> Y
+            # Los dos ultimos --> Z
+
+            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
+            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
+            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
+            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
+            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
+            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
+
+            verts = [[Z[5],Z[1],Z[7],Z[2]],
+                     [Z[6],Z[3],Z[0],Z[4]],
+                     [Z[3],Z[1],Z[5],Z[6]],
+                     [Z[0],Z[7],Z[2],Z[4]],
+                     [Z[2],Z[4],Z[6],Z[5]],
+                     [Z[7],Z[0],Z[3],Z[1]]]
+
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111, projection='3d')
+            #
+            # ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
+            # ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
+            # ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
+            # ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
+            # ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
+            # ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
+            # ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
+            # ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
+            # ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
+            # ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
+            # ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
+            # ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
+            # ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
+            # ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
+            # ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
+            # ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
+            #
+            # bbox = Poly3DCollection(verts,
+            # facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
+            # bbox._facecolors2d= bbox._facecolor3d
+            # bbox._edgecolors2d = bbox._edgecolor3d
+            # ax.add_collection3d(bbox)
+            #
+            # ax.set_xlabel('Eje X [cm]')
+            # ax.set_ylabel('Eje Y [cm]')
+            # ax.set_zlabel('Eje Z [cm]')
+            #
+            # plt.show()
+
+            return Z, verts
+
+        if plane == 'XZ':
+
+            vplane = np.array([0,1,0])
+
+            # Definir el angulo
+            angle = alpha * np.pi/180
+            # Definimos el vector normal al plano del paralepipedo
+            vnorm_x = np.cos(angle)
+            vnorm_y = 0
+            vnorm_z = np.sin(angle)
+            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
+            # vp1 = vp1/np.linalg.norm(vp1)
+
+            # Definimos un vector perpendicular al plano y al plano del paralepipedo
+            vp2 = np.cross(vplane,vp1)
+            vp2 = vp2/np.linalg.norm(vp2)
+
+            # Definimos otro vector perpendicular
+            vp3 = np.cross(vp1,vp2)
+            vp3 = vp3/np.linalg.norm(vp3)
+
+            # Multiplicamos los vectores para que tengan las dimensiones del detectors
+            vp1 = vp1 * ydim    # (cm)
+            vp2 = vp2 * xdim    # (cm)
+            vp3 = vp3 * zdim    # (cm)
+            vp4 = vp1 + vp2
+            vp5 = vp1 + vp3
+            vp6 = vp2 + vp3
+            vp7 = vp1 + vp2 + vp3
+            vp8 = np.array([0.0,0.0,0.0])
+
+            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
+            # Traslada los vértices al centro de coordenadas
+            vp_mean = np.mean(vp, axis=0)
+            vp = vp - vp_mean
+
+            vp = vp + vp1/np.linalg.norm(vp1) * radio
+            # vp = vp - np.array([radio,radio,0])
+            Z = vp
+
+            # Los dos primeros --> X
+            # Los dos segundos --> Y
+            # Los dos ultimos --> Z
+
+            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
+            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
+            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
+            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
+            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
+            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
+
+            verts = [[Z[5],Z[1],Z[7],Z[2]],
+                     [Z[6],Z[3],Z[0],Z[4]],
+                     [Z[3],Z[1],Z[5],Z[6]],
+                     [Z[0],Z[7],Z[2],Z[4]],
+                     [Z[2],Z[4],Z[6],Z[5]],
+                     [Z[7],Z[0],Z[3],Z[1]]]
+
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111, projection='3d')
+            #
+            # ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
+            # ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
+            # ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
+            # ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
+            # ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
+            # ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
+            # ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
+            # ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
+            # ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
+            # ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
+            # ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
+            # ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
+            # ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
+            # ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
+            # ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
+            # ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
+            #
+            # bbox = Poly3DCollection(verts,
+            # facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
+            # bbox._facecolors2d= bbox._facecolor3d
+            # bbox._edgecolors2d = bbox._edgecolor3d
+            # ax.add_collection3d(bbox)
+            #
+            # ax.set_xlabel('Eje X [cm]')
+            # ax.set_ylabel('Eje Y [cm]')
+            # ax.set_zlabel('Eje Z [cm]')
+            #
+            # plt.show()
+
+            return Z, verts
+
+        if plane == 'YZ':
+
+            vplane = np.array([1,0,0])
+
+            # Definir el angulo
+            angle = alpha * np.pi/180
+            # Definimos el vector normal al plano del paralepipedo
+            vnorm_x = 0
+            vnorm_y = np.cos(angle)
+            vnorm_z = np.sin(angle)
+            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
+            # vp1 = vp1/np.linalg.norm(vp1)
+
+            # Definimos un vector perpendicular al plano y al plano del paralepipedo
+            vp2 = np.cross(vplane,vp1)
+            vp2 = vp2/np.linalg.norm(vp2)
+
+            # Definimos otro vector perpendicular
+            vp3 = np.cross(vp1,vp2)
+            vp3 = vp3/np.linalg.norm(vp3)
+
+            # Multiplicamos los vectores para que tengan las dimensiones del detectors
+            vp1 = vp1 * ydim    # (cm)
+            vp2 = vp2 * xdim    # (cm)
+            vp3 = vp3 * zdim    # (cm)
+            vp4 = vp1 + vp2
+            vp5 = vp1 + vp3
+            vp6 = vp2 + vp3
+            vp7 = vp1 + vp2 + vp3
+            vp8 = np.array([0.0,0.0,0.0])
+
+            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
+            # Traslada los vértices al centro de coordenadas
+            vp_mean = np.mean(vp, axis=0)
+            vp = vp - vp_mean
+
+            vp = vp + vp1/np.linalg.norm(vp1) * radio
+            # vp = vp - np.array([radio,radio,0])
+            Z = vp
+
+            # Los dos primeros --> X
+            # Los dos segundos --> Y
+            # Los dos ultimos --> Z
+
+            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
+            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
+            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
+            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
+            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
+            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
+
+            verts = [[Z[5],Z[1],Z[7],Z[2]],
+                     [Z[6],Z[3],Z[0],Z[4]],
+                     [Z[3],Z[1],Z[5],Z[6]],
+                     [Z[0],Z[7],Z[2],Z[4]],
+                     [Z[2],Z[4],Z[6],Z[5]],
+                     [Z[7],Z[0],Z[3],Z[1]]]
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+
+            ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
+            ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
+            ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
+            ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
+            ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
+            ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
+            ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
+            ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
+            ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
+            ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
+            ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
+            ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
+            ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
+            ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
+            ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
+            ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
+
+            bbox = Poly3DCollection(verts,
+            facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
+            bbox._facecolors2d= bbox._facecolor3d
+            bbox._edgecolors2d = bbox._edgecolor3d
+            ax.add_collection3d(bbox)
+
+            ax.set_xlabel('Eje X [cm]')
+            ax.set_ylabel('Eje Y [cm]')
+            ax.set_zlabel('Eje Z [cm]')
+
+            plt.show()
+
+            return Z, verts
+
+    def __ViewPlanes(self):
+
+        nplanes = int(self._nplane.value())
+        plane = str(self._plane.currentText())
+        radio = self._radio.value()
+        dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
+
+        angle = 360/nplanes
+        list_bodys = []
+        for n in range(1,nplanes):
+
+            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=angle*n, radio=radio, dimensions=dimensions)
+
+            x = Z[:,0]
+            y = Z[:,1]
+            z = Z[:,2]
+            i= [7, 0, 0, 0, 4, 4, 6, 1, 4, 0, 3, 6]
+            j= [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
+            k= [0, 7, 2, 3, 6, 7, 1, 6, 5, 5, 7, 2]
+
+
+            list_bodys.append(go.Mesh3d(x=x, y=y, z=z, alphahull = 0,
+                                        # i=i, j=j, k=k,
+                                        opacity=0.5,
+                                        color='blue'))
+
+        # Datos para el eje x
+        list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
+
+        # Datos para el eje y
+        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
+
+        # Datos para el eje z
+        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
+
+
+        layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
+        # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
+        #                   scene = dict(xaxis=dict(range=[-10,10]),
+        #                                yaxis=dict(range=[-10,10]),
+        #                                zaxis=dict(range=[-10,10])))
+
+        # df = px.data.tips()
+        # fig = px.box(df, x="day", y="total_bill", color="smoker")
+        # fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
+        #
+
+        fig = go.Figure(data = list_bodys, layout = layout)
+        # fig.update_layout(scene_camera_eye_z= 0.55)
+        fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
+        self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
+        # fig.show()
+
+    # Crear INPUT con el cinturon de detectores
+    def __converttotext(self, c):
+        if c > 0:
+            num_str = '{:.7f}'.format(c)
+            numtxt = len('0.000000000000000')
+            format = 'E+00'
+            if len(num_str) != numtxt:
+                cantidad = numtxt - len(num_str)
+                for i in range(cantidad):
+                    num_str = num_str + '0'
+            num_str = '+' + num_str + format
+            return num_str
+        elif c < 0:
+            num_str = '{:.7f}'.format(c)
+            numtxt = len('0.000000000000000')
+            format = 'E+00'
+            if len(num_str) != numtxt:
+                cantidad = numtxt - len(num_str)
+                for i in range(cantidad+1):
+                    num_str = num_str + '0'
+            num_str = num_str + format
+            return num_str
+        else:
+            num_str = '{:.7f}'.format(c)
+            numtxt = len('0.000000000000000')
+            format = 'E+00'
+            if len(num_str) != numtxt:
+                cantidad = numtxt - len(num_str)
+                for i in range(cantidad):
+                    num_str = num_str + '0'
+            num_str = '+' + num_str + format
+            return num_str
+
+    def __GetPlaneCoefficient(self,p1,p2,p3,p4):
+
+        # Encontramos dos vectores del plano.
+        v1 = p1 - p2
+        v2 = p3 - p2
+        v3 = p4 - p2
+        # Calculamos el vector normal del plano
+        normal = np.cross(v2,v3)
+        normal /= np.linalg.norm(normal)
+
+        # Calcular la distancia del plano al origen
+        d = -np.dot(normal,p1)
+
+        a = normal[0]
+        b = normal[1]
+        c = normal[2]
+
+        return a,b,c,d
+
+    def __ConstructInput(self, nplanes, plane, materials, radio, dimensions, path):
+
+        # # Creamos una lista que contenga el script de INPUT
+        string_list = []
+
+        # (1) Agregamos el titulo al INPUT -----------------------------------------
+
+        title = ["XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
+                 "Detector XR --> Definimos las superficies limitantes.\n",
+                 "Materiales:\n",
+        	     "  - 0 -> Vacio -> Hueco\n",
+                 "  - 1 -> {} -> Detector\n".format(materials[0,1]),
+                 "\n",
+                 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
+                 "0000000000000000000000000000000000000000000000000000000000000000\n"]
+
+        for line in title:
+            string_list.append(line)
+
+        # (2) Creamos las superficies y los bodys para los detectores---------------
+
+        # Definimos unidad angular de partición
+        angle = 360/nplanes
+        j=0
+        for n in range(1,nplanes):
+
+            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha = n*angle, radio=radio, dimensions=dimensions)
+
+            i_detector = ["C\n",
+                          "C  **** Detector {}\n".format(n),
+                          "C\n",
+                          ]
+
+            for line in i_detector:
+                string_list.append(line)
+
+            for i,vert in enumerate(verts):
+                p1,p2,p3,p4 = vert
+                a,b,c,d = self.__GetPlaneCoefficient(p1,p2,p3,p4)
+                print(a,b,c,d)
+                # Corregimos un error de escritura
+                if a==-0.0:
+                    a=0.0
+                if b==-0.0:
+                    b=0.0
+                if c==-0.0:
+                    c=0.0
+                if d==-0.0:
+                    d=0.0
+
+                # Agregamos el titulo de surface
+                if n+i+j < 10:
+                    string_list.append("SURFACE (   {})   Plano limitante \n".format(n+i+j))
+                if n+i+j < 100 and n+i+j >= 10:
+                    string_list.append("SURFACE (  {})   Plano limitante \n".format(n+i+j))
+                if n+i+j >= 100:
+                    string_list.append("SURFACE ( {})   Plano limitante \n".format(n+i+j))
+
+                if a == 0.0 and b != 0.0 and c != 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AY=({},   0)\n".format(self.__converttotext(b)))
+                    string_list.append("     AZ=({},   0)\n".format(self.__converttotext(c)))
+                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
+                elif a != 0.0 and b == 0.0 and c != 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AX=({},   0)\n".format(self.__converttotext(a)))
+                    string_list.append("     AZ=({},   0)\n".format(self.__converttotext(c)))
+                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
+                elif a != 0.0 and b != 0.0 and c == 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AX=({},   0)\n".format(self.__converttotext(a)))
+                    string_list.append("     AY=({},   0)\n".format(self.__converttotext(b)))
+                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
+                elif a == 0.0 and b == 0.0 and c != 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AZ=({},   0)\n".format(self.__converttotext(c)))
+                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
+                elif a != 0.0 and b == 0.0 and c == 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AX=({},   0)\n".format(self.__converttotext(a)))
+                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
+                elif a == 0.0 and b != 0.0 and c == 0.0:
+                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
+                    string_list.append("     AY=({},   0)\n".format(self.__converttotext(b)))
+                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
+
+                string_list.append("0000000000000000000000000000000000000000000000000000000000000000\n")
+
+
+            if n < 10:
+                string_list.append("BODY    (   {})  Detector {} - Prism\n".format(n,n))
+            elif n>=10 and n<100:
+                string_list.append("BODY    (  {})  Detector {} - Prism\n".format(n,n))
+            elif n>=100:
+                string_list.append("BODY    ( {})  Detector {} - Prism\n".format(n,n))
+
+            string_list.append("MATERIAL(   {})\n".format(materials[0,0]))
+
+            if n+0+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+0+j))
+            elif n+0+j>=10 and n+0+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+0+j))
+            elif n+0+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+0+j))
+
+            if n+1+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+1+j))
+            elif n+1+j>=10 and n+1+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+1+j))
+            elif n+1+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+1+j))
+
+            if n+2+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+2+j))
+            elif n+2+j>=10 and n+2+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+2+j))
+            elif n+2+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+2+j))
+
+            if n+3+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+3+j))
+            elif n+3+j>=10 and n+3+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+3+j))
+            elif n+3+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+3+j))
+
+            if n+4+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+4+j))
+            elif n+4+j>=10 and n+4+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+4+j))
+            elif n+4+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+4+j))
+
+            if n+5+j < 10:
+                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+5+j))
+            elif n+5+j>=10 and n+5+j<100:
+                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+5+j))
+            elif n+5+j>=100:
+                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+5+j))
+
+            string_list.append("0000000000000000000000000000000000000000000000000000000000000000\n")
+            j += 5
+
+        string_list.append("END      0000000000000000000000000000000000000000000000000000000")
+
+        self.geometryFile = string_list
+
+        pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_simulated.geo')
+
+        my_file = open('{}'.format(pathfile),'w')
+        new_file_contents = "".join(string_list)
+        my_file.write(new_file_contents)
+        my_file.close()
+
+
+    # ========= TYPES PLOTS ===========
 
     def __ViewPlot(self):
 
@@ -1748,552 +2275,7 @@ class Plot3DView(QWidget):
 
             self.__view_particle_ionizations(data_base)
 
-    def __func(self,label):
-        index = self.__labels.index(label)
-        self.__lines[index].set_visible(not self.__lines[index].get_visible())
-        self.can.draw()
 
-    def __view_event_type(self, data_base):
-
-        self.fig = Figure(figsize=(2, 2))
-        self.can = FigureCanvasQTAgg(self.fig)
-        # self.toolbar = NavigationToolbar2QT(self.can, self)
-        # self.cllayout.addWidget(self.toolbar)
-        self.cllayout.addWidget(self.can)
-
-        # here you can set up your figure/axis
-        self.ax = self.can.figure.add_subplot(111, projection='3d')
-        matplotlib.rcParams.update({'font.size': 8})
-
-        # Separamos en eventos primarios y secundarios
-        pri, sec = data_base
-
-        # Ploteamos los resultados
-
-        if len(sec) != 0:
-            surf1 = self.ax.scatter3D(pri[:,0], pri[:,1], pri[:,2], c='b', alpha=0.7, label='Primary')
-            surf2 = self.ax.scatter3D(sec[:,0], sec[:,1], sec[:,2], c='r', alpha=0.7, label='Dispersions')
-            # ----------------------------------------------------------
-            # Primarios o secundarios
-            self.__lines = [surf1, surf2]
-            self.__labels = ['Primary Track', 'Dispersions Track']
-        else:
-            surf1 = self.ax.scatter3D(pri[:,0], pri[:,1], pri[:,2], c='b', alpha=0.7, label='Primary')
-            # ----------------------------------------------------------
-            # Primarios
-            self.__lines = [surf1]
-            self.__labels = ['Primary Track']
-
-        self.ax.legend(loc="upper left", fontsize=10)
-        self.ax.set_xlabel('X [cm]')
-        self.ax.set_ylabel('Y [cm]')
-        self.ax.set_zlabel('Z [cm]')
-
-        # ----------------------------------------------------------
-        # Mostrar primarios o secundarios
-        visibility = [line.get_visible() for line in self.__lines]
-        axcolor = 'lightgoldenrodyellow'
-        rax = self.can.figure.add_axes([0.05, 0.7, 0.15, 0.15], facecolor=axcolor)
-
-        self.__check = CheckButtons(rax, self.__labels, visibility)
-        self.__check.on_clicked(self.__func)
-
-        # self.can.figure.rcParams.update({'font.size': 8})
-        self.can.draw()
-
-    def __view_particle_ionizations(self, data_base):
-
-        self.fig = Figure(figsize=(2, 2))
-        self.can = FigureCanvasQTAgg(self.fig)
-        # self.toolbar = NavigationToolbar2QT(self.can, self)
-        # self.cllayout.addWidget(self.toolbar)
-        self.cllayout.addWidget(self.can)
-
-        # here you can set up your figure/axis
-        self.ax = self.can.figure.add_subplot(111, projection='3d')
-        matplotlib.rcParams.update({'font.size': 8})
-
-        ion, nion = data_base
-
-        # Ploteamos los resultados
-
-        surf1 = self.ax.scatter3D(ion[:,0], ion[:,1], ion[:,2], c='r', label='Ionizations')
-        surf2 = self.ax.scatter3D(nion[:,0], nion[:,1], nion[:,2], c='k', alpha=0.2, label='Not ionizations')
-        # ----------------------------------------------------------
-        # Ionizaciones o no ionizaciones
-        self.__lines = [surf1, surf2]
-        self.__labels = ['Ionizations', 'Not ionizations']
-
-        self.ax.legend(loc="upper left", fontsize=10)
-        self.ax.set_xlabel('X [cm]')
-        self.ax.set_ylabel('Y [cm]')
-        self.ax.set_zlabel('Z [cm]')
-
-        visibility = [line.get_visible() for line in self.__lines]
-        axcolor = 'lightgoldenrodyellow'
-        rax = self.can.figure.add_axes([0.05, 0.7, 0.15, 0.15], facecolor=axcolor)
-
-        self.__check = CheckButtons(rax, self.__labels, visibility)
-        self.__check.on_clicked(self.__func)
-
-        self.can.draw()
-
-    # # ========= TYPES METHODS ============
-
-    def __ViewMethod(self):
-
-        # (4) Extraemos los datos
-        self.__nsegments = self._nseg.value()
-        self.__nparticle = self._npart.value()
-        self.__type_method = str(self._style_method.currentText())
-        # Filtramos los datos para trabajar
-        # data_processed = DataProcessed(self.data_base, npart=self.__nparticle, type_plot="Ionizaciones")
-        # Procesamos los datos
-        self.track = ProcessingTrack(self.data_base, npart=self.__nparticle, nseg=self.__nsegments)
-
-        # ', 'LET', 'LET_Process', "Resultado Final"]
-        if self.__type_method == 'Methods of approximation':
-
-            self.can.deleteLater()
-
-            line1 = self.track.dict_data['Linear']['Line']
-            line2 = self.track.dict_data['Ang_Linear']['Line']
-            line3 = self.track.dict_data['Centerline']['Line']
-            line4 = self.track.dict_data['Fit_Line_Seg']['Line']
-
-            self.__labels = ['Linear', 'Ang_Linear', 'Centerline', 'Fit_Line_Seg', 'Ionizations']
-
-            # Ploteamos los resultados
-            self.fig = Figure(figsize=(2, 2))
-            self.can = FigureCanvasQTAgg(self.fig)
-            # self.toolbar = NavigationToolbar2QT(self.can, self)
-            # self.cllayout.addWidget(self.toolbar)
-            self.cllayout.addWidget(self.can)
-
-            # here you can set up your figure/axis
-            self.ax = self.can.figure.add_subplot(111, projection='3d')
-            matplotlib.rcParams.update({'font.size': 8})
-
-            surf1, = self.ax.plot3D(line1[:,0], line1[:,1], line1[:,2], 'b-', label=self.__labels[0])
-            surf2, = self.ax.plot3D(line2[:,0], line2[:,1], line2[:,2], 'r-', label=self.__labels[1])
-            surf3, = self.ax.plot3D(line3[:,0], line3[:,1], line3[:,2], 'g-', label=self.__labels[2])
-            surf4, = self.ax.plot3D(line4[:,0], line4[:,1], line4[:,2], 'o-', label=self.__labels[3])
-            surf5, = self.ax.plot3D(self.track.dict_data['Linear']['Data'][:,0],
-                                    self.track.dict_data['Linear']['Data'][:,1],
-                                    self.track.dict_data['Linear']['Data'][:,2],
-                                    'ko',alpha=0.3, label=self.__labels[4])
-
-            # ----------------------------------------------------------
-            # Metodos visualizacion
-            self.__lines = [surf1, surf2, surf3, surf4, surf5]
-
-            self.ax.legend(loc="upper left", fontsize=10)
-            self.ax.set_xlabel('X [cm]')
-            self.ax.set_ylabel('Y [cm]')
-            self.ax.set_zlabel('Z [cm]')
-
-            visibility = [line.get_visible() for line in self.__lines]
-            axcolor = 'lightgoldenrodyellow'
-            rax = self.can.figure.add_axes([0.05, 0.7, 0.15, 0.15], facecolor=axcolor)
-
-            self.__check = CheckButtons(rax, self.__labels, visibility)
-            self.__check.on_clicked(self.__func)
-
-            self.can.draw()
-
-        elif self.__type_method == 'LET':
-
-            # --------------------------------------------------------
-            # Extraemos los datos y los trayectos aproximados con cada técnica
-
-            self.can.deleteLater()
-
-            line1 = self.track.dict_data['Linear']['Line']
-            line2 = self.track.dict_data['Ang_Linear']['Line']
-            line3 = self.track.dict_data['Centerline']['Line']
-            line4 = self.track.dict_data['Fit_Line_Seg']['Line']
-
-            data1 = self.track.dict_data['Linear']['Track']
-            data2 = self.track.dict_data['Ang_Linear']['Track']
-            data3 = self.track.dict_data['Centerline']['Track']
-            data4 = self.track.dict_data['Fit_Line_Seg']['Track']
-
-            data = self.track.dict_data['Fit_Line_Seg']['Data']
-
-            self.__labels = ['Linear', 'Ang_Linear', 'Centerline', 'Fit_Line_Seg', 'Interactions']
-
-            # --------------------------------------------------------
-            # Creamos las figuras
-
-            # Ploteamos los resultados
-            self.fig = Figure(figsize=(2, 2))
-            self.can = FigureCanvasQTAgg(self.fig)
-            # self.toolbar = NavigationToolbar2QT(self.can, self)
-            # self.cllayout.addWidget(self.toolbar)
-            self.cllayout.addWidget(self.can)
-
-            self.grid = gridspec.GridSpec(2, 4, wspace=0.4, hspace=0.3)
-            self.main_ax = self.can.figure.add_subplot(self.grid[:, :2],projection='3d')
-            self.xx_hist = self.can.figure.add_subplot(self.grid[0, 2])
-            self.xy_hist = self.can.figure.add_subplot(self.grid[0, 3])
-            self.yx_hist = self.can.figure.add_subplot(self.grid[1, 2])
-            self.yy_hist = self.can.figure.add_subplot(self.grid[1, 3])
-            matplotlib.rcParams.update({'font.size': 8})
-
-            # mpl.rcParams['font.size'] = 7
-            #
-            # ---------------------------------------------------------
-            # Rellenamos las figuras con los datos
-            # Main_ax
-            surf1, = self.main_ax.plot3D(line1[:,0], line1[:,1], line1[:,2], 'm-', label=self.__labels[0])
-            surf2, = self.main_ax.plot3D(line2[:,0], line2[:,1], line2[:,2], 'r-', label=self.__labels[1])
-            surf3, = self.main_ax.plot3D(line3[:,0], line3[:,1], line3[:,2], 'g-', label=self.__labels[2])
-            surf4, = self.main_ax.plot3D(line4[:,0], line4[:,1], line4[:,2], 'b-', label=self.__labels[3])
-            surf5, = self.main_ax.plot3D(data[:,0], data[:,1], data[:,2], 'ko', alpha=0.3, label=self.__labels[4])
-
-            # Note: location, length_seg, direction_seg, wt_hi, let_f, ions_segment
-            let1 = np.array(data1["let_seg"])
-            let2 = np.array(data2["let_seg"])
-            let3 = np.array(data3["let_seg"])
-            let4 = np.array(data4["let_seg"])
-
-            # -------------------------------------------------------
-            # Armamos los histogramas con los datos de los let
-
-            dat1 = {'S{}'.format(i+1):value for i,value in enumerate(let1)}
-            seg = list(dat1.keys())
-            values = list(dat1.values())
-            hist1 = self.xx_hist.bar(seg, values, width=.4, color='purple')
-
-            dat2 = {'S{}'.format(i+1):value for i,value in enumerate(let2)}
-            seg = list(dat2.keys())
-            values = list(dat2.values())
-            hist2 = self.xy_hist.bar(seg, values, width=.4, color='red')
-
-            dat3 = {'S{}'.format(i+1):value for i,value in enumerate(let3)}
-            seg = list(dat3.keys())
-            values = list(dat3.values())
-            hist3 = self.yx_hist.bar(seg, values, width=.4, color='green')
-
-            dat4 = {'S{}'.format(i+1):value for i,value in enumerate(let4)}
-            seg = list(dat4.keys())
-            values = list(dat4.values())
-            hist4 = self.yy_hist.bar(seg, values, width=.4, color='blue')
-
-            self.xx_hist.set_title('Linear')
-            self.xy_hist.set_title('Ang_Linear')
-            self.yx_hist.set_title('Centerline')
-            self.yy_hist.set_title('Fit_Line_Seg')
-            self.xx_hist.set_xlabel('Div. Track')
-            self.xx_hist.set_ylabel('keV/um')
-            self.xy_hist.set_xlabel('Div. Track')
-            self.xy_hist.set_ylabel('keV/um')
-            self.yx_hist.set_xlabel('Div. Track')
-            self.yx_hist.set_ylabel('keV/um')
-            self.yy_hist.set_xlabel('Div. Track')
-            self.yy_hist.set_ylabel('keV/um')
-
-            # ----------------------------------------------------------
-            # Opciones y configuraciones del PLOT
-
-            self.__lines = [surf1, surf2, surf3, surf4, surf5]
-
-            self.main_ax.legend(loc="upper right", fontsize=9)
-            self.main_ax.set_xlabel('X [cm]')
-            self.main_ax.set_ylabel('Y [cm]')
-            self.main_ax.set_zlabel('Z [cm]')
-
-            visibility = [line.get_visible() for line in self.__lines]
-            axcolor = 'lightgoldenrodyellow'
-            rax = self.can.figure.add_axes([0.05, 0.7, 0.08, 0.15], facecolor=axcolor)
-
-            self.__check = CheckButtons(rax, self.__labels, visibility)
-            self.__check.on_clicked(self.__func)
-            self.can.draw()
-
-    # # ========= TYPES LET ============
-
-    def __ViewLet(self):
-
-        # (4) Extraemos los datos
-        self.__nsegments = self._nseg.value()
-        self.__nparticle = self._npart.value()
-        self.__method = str(self._method.currentText())
-
-        # Filtramos los datos para trabajar
-        # data_processed = DataProcessed(self.data_base, npart=self.__nparticle, type_plot="Ionizaciones")
-        # Procesamos los datos
-        self.track = ProcessingTrack(self.data_base, npart=self.__nparticle, nseg=self.__nsegments)
-
-        # ----------------------------------------------------------
-        # (2) Extraemos los datos
-        # line1, data1 = ProcessingTrackOfParticle(pri, method='Linear', div=div)
-        self.can.deleteLater()
-
-        line1 = self.track.dict_data[self.__method]['Line']
-        data1 = self.track.dict_data[self.__method]['Track']
-        data = self.track.dict_data[self.__method]['Data']
-
-        pri_i = self.track.dict_data[self.__method]['Ionizations']
-        pri_n = self.track.dict_data[self.__method]['No_ionizations']
-
-        ene_seg = data1["ene_seg"]
-        length_seg = data1["len_seg"]
-        inte_total = data1["ion_seg"]
-        let = data1["let_seg"]
-
-        # --------------------------------------------------------
-        # Creamos las figuras
-
-        # Ploteamos los resultados
-        self.fig = Figure(figsize=(2, 2))
-        self.can = FigureCanvasQTAgg(self.fig)
-        # self.toolbar = NavigationToolbar2QT(self.can, self)
-        # self.cllayout.addWidget(self.toolbar)
-        self.cllayout.addWidget(self.can)
-        # location, length_seg, direction, wt_hi, let_f, ions_segment, inte_total
-
-        # --------------------------------------------------------
-        # (3) Creamos las figuras
-        fig = plt.figure()
-        self.ax_main1 = self.can.figure.add_subplot(121, projection='3d')
-        self.ax_main2 = self.can.figure.add_subplot(122)
-
-        matplotlib.rcParams.update({'font.size': 8})
-        # ax_main1
-
-        surf1, = self.ax_main1.plot3D(pri_i[:,0], pri_i[:,1], pri_i[:,2], 'bo', alpha=0.3, label='Ionizations')
-        surf2, = self.ax_main1.plot3D(pri_n[:,0], pri_n[:,1], pri_n[:,2], 'ko', alpha=0.2, label='No ionizations')
-        surf3, = self.ax_main1.plot3D(line1[:,0], line1[:,1], line1[:,2], 'r-', alpha=0.4, label=self.__method)
-        surf4, = self.ax_main1.plot3D(line1[:,0], line1[:,1], line1[:,2], 'go', alpha=0.4, label='Seg.Limits')
-
-        data = np.array(inte_total[0])
-        lc = Line3DCollection(data, linewidths=0.7, colors='b', alpha=0.5, label='Distance')
-        surf5 = self.ax_main1.add_collection(lc)
-
-        self.ax_main1.legend(loc="upper right", fontsize=9)
-        self.ax_main1.set_xlabel('Eje X [cm]')
-        self.ax_main1.set_ylabel('Eje Y [cm]')
-        self.ax_main1.set_zlabel('Eje Z [cm]')
-        # ax_main1.set_xticks(fontsize=7)
-        # ax_main1.set_yticks(fontsize=7)
-        # ax_main1.set_zticks(fontsize=7)
-
-        # ax_main2
-        divn = np.arange(1,5)
-        dat2 = {'S{}'.format(i+1):value for i,value in enumerate(let)}
-        seg_label = list(dat2.keys())
-        values = list(dat2.values())
-        self.bar = self.ax_main2.bar(seg_label, values, width=.4, color='red')
-
-        for rect,e,le in zip(self.bar, ene_seg, length_seg):
-            height = rect.get_height()
-            self.ax_main2.text(rect.get_x() + rect.get_width() / 2.0, height, f'{height:.2f}', ha='center', va='bottom')
-
-        self.ax_main2.set_xlabel('Segments')
-        self.ax_main2.set_ylabel('LET [keV/um]')
-
-        # ---------------------
-        # Barra controladora 1
-
-        self.__lines = [surf1, surf2, surf3, surf4, surf5]
-        self.__labels = ['Ionizaciones', 'No ionizaciones', self.__method, 'Seg.Limits', 'Distance']
-
-        visibility = [line.get_visible() for line in self.__lines]
-        axcolor = 'lightgoldenrodyellow'
-        rax = self.can.figure.add_axes([0.05, 0.7, 0.08, 0.15], facecolor=axcolor)
-        self.__check = CheckButtons(rax, self.__labels, visibility)
-        self.__check.on_clicked(self.__func)
-
-        # --------------------
-        # Barra controladora 2
-        self.ax_seg = self.can.figure.add_axes([0.25, 0.01, 0.65, 0.03])
-        sseg = Slider(
-            self.ax_seg, "Segments", 0, self.__nsegments-2,
-            valinit=1, valstep=1,
-            initcolor='none'  # Remove the line marking the valinit position.
-        )
-
-        def change(val):
-            seg = sseg.val
-
-            data = np.array(inte_total[seg])
-            # ll = Line3DCollection(data, linewidths=0.5, colors='b')
-            lc.set_segments(data)
-
-            self.can.draw_idle()
-
-        sseg.on_changed(change)
-
-        self.can.draw()
-
-    # # ========= TYPE RESULTS ============
-
-    def __ViewResults(self):
-
-        # (4) Extraemos los datos
-        self.__nsegments = self._nseg.value()
-        self.__nparticle = self._npart.value()
-        self.__type_results = str(self._style_results.currentText())
-
-        # Filtramos los datos para trabajar
-        # Procesamos los datos
-        self.track = ProcessingTrack(self.data_base, npart=self.__nparticle, nseg=self.__nsegments)
-
-        value_error1 = self.track.dict_data["Linear"]['Error']
-        value_error2 = self.track.dict_data["Centerline"]['Error']
-        value_error3 = self.track.dict_data["Ang_Linear"]['Error']
-        value_error4 = self.track.dict_data["Fit_Line_Seg"]['Error']
-
-        list_method = ["Linear", "Centerline", "Ang_Linear", "Fit_Line_Seg"]
-        list_values = []
-        for v1,v2,v3,v4 in zip(value_error1,value_error2,value_error3,value_error4):
-
-            dv1 = 1-v1
-            dv2 = 1-v2
-            dv3 = 1-v3
-            dv4 = 1-v4
-
-            list_dv = [dv1,dv2,dv3,dv4]
-            min_dv = np.argmin(list_dv)
-            list_values.append(min_dv)
-
-        num = mode(list_values)
-        method_best = list_method[num]
-
-        mean1 = np.mean(value_error1)
-        mean2 = np.mean(value_error2)
-        mean3 = np.mean(value_error3)
-        mean4 = np.mean(value_error4)
-        values_error = [mean1, mean2, mean3, mean4]
-
-        self.__method_best = method_best
-        self.values_error = values_error
-
-
-        # ----------------------------------------------------------
-        # (2) Extraemos los datos
-        # line1, data1 = ProcessingTrackOfParticle(pri, method='Linear', div=div)
-        self.can.deleteLater()
-
-        line1 = self.track.dict_data[self.__method_best]['Line']
-        data1 = self.track.dict_data[self.__method_best]['Track']
-        data = self.track.dict_data[self.__method_best]['Data']
-
-        pri_i = self.track.dict_data[self.__method_best]['Ionizations']
-        pri_n = self.track.dict_data[self.__method_best]['No_ionizations']
-
-        # ----------------------------------------------------------
-        # (2) Extraemos los datos
-        # line1, data1 = ProcessingTrackOfParticle(pri, method='Linear', div=div)
-
-        ene_seg = data1["ene_seg"]
-        length_seg = data1["len_seg"]
-        inte_total = data1["ion_seg"]
-        let = data1["let_seg"]
-
-        # --------------------------------------------------------
-        # (3) Creamos las figuras
-        # Ploteamos los resultados
-        self.fig = Figure(figsize=(2, 2))
-        self.can = FigureCanvasQTAgg(self.fig)
-        # self.toolbar = NavigationToolbar2QT(self.can, self)
-        # self.cllayout.addWidget(self.toolbar)
-        self.cllayout.addWidget(self.can)
-        # location, length_seg, direction, wt_hi, let_f, ions_segment, inte_total
-
-        # --------------------------------------------------------
-        # (3) Creamos las figuras
-        fig = plt.figure()
-        self.ax_main1 = self.can.figure.add_subplot(121, projection='3d')
-        self.ax_main2 = self.can.figure.add_subplot(122)
-
-        matplotlib.rcParams.update({'font.size': 8})
-
-        # ax_main1
-        surf1, = self.ax_main1.plot3D(pri_i[:,0], pri_i[:,1], pri_i[:,2], 'bo', alpha=0.3, label='Ionizations')
-        surf2, = self.ax_main1.plot3D(pri_n[:,0], pri_n[:,1], pri_n[:,2], 'ko', alpha=0.2, label='Not ionizations')
-        surf3, = self.ax_main1.plot3D(line1[:,0], line1[:,1], line1[:,2], 'r-', alpha=0.4, label=self.__method_best)
-        surf4, = self.ax_main1.plot3D(line1[:,0], line1[:,1], line1[:,2], 'go', alpha=0.4, label='Seg.Limits')
-
-        data = np.array(inte_total[0])
-        lc = Line3DCollection(data, linewidths=0.7, colors='b', alpha=0.5, label='Distance')
-        surf5 = self.ax_main1.add_collection(lc)
-
-        self.ax_main1.legend(loc="upper right", fontsize=9)
-        self.ax_main1.set_xlabel('X [cm]')
-        self.ax_main1.set_ylabel('Y [cm]')
-        self.ax_main1.set_zlabel('Z [cm]')
-
-        # ax_main2
-        divn = np.arange(1,5)
-        dat2 = {'S{}'.format(i+1):value for i,value in enumerate(let)}
-        seg_label = list(dat2.keys())
-        values = list(dat2.values())
-        self.bar = self.ax_main2.bar(seg_label, values, width=.4, color='red')
-
-        for rect,e,le in zip(self.bar, ene_seg, length_seg):
-            height = rect.get_height()
-            self.ax_main2.text(rect.get_x() + rect.get_width() / 2.0, height, f'{height:.2f}', ha='center', va='bottom')
-
-
-        self.ax_main2.set_xlabel('Segments')
-        self.ax_main2.set_ylabel('LET [keV/um]')
-
-        # ---------------------
-        # Barra controladora 1
-
-        self.__lines = [surf1, surf2, surf3, surf4, surf5]
-        self.__labels = ['Ionizations', 'Not ionizations', self.__method_best, 'Seg.Limits', 'Distance']
-
-        visibility = [line.get_visible() for line in self.__lines]
-        axcolor = 'lightgoldenrodyellow'
-        rax = self.can.figure.add_axes([0.05, 0.7, 0.08, 0.15], facecolor=axcolor)
-        self.__check = CheckButtons(rax, self.__labels, visibility)
-        self.__check.on_clicked(self.__func)
-
-        # --------------------
-        # Barra controladora 2
-        self.ax_seg = self.can.figure.add_axes([0.25, 0.01, 0.65, 0.03])
-        sseg = Slider(
-            self.ax_seg, "Segments", 0, self.__nsegments-2,
-            valinit=1, valstep=1,
-            initcolor='none'  # Remove the line marking the valinit position.
-        )
-
-        def change(val):
-            seg = sseg.val
-
-            data = np.array(inte_total[seg])
-            # ll = Line3DCollection(data, linewidths=0.5, colors='b')
-            lc.set_segments(data)
-
-            self.can.draw_idle()
-
-        sseg.on_changed(change)
-
-        self.can.draw()
-
-    def __CreateInputTCAD(self):
-
-        if self.__nsegments is None or  self.__nparticle is None or self.__method_best is None:
-            msgBox = QMessageBox()
-            msgBox.setText("No se puede crear un INPUT para TCAD. Primero ingresar 'Automated method'.")
-            msgBox.setStandardButtons(QMessageBox.Cancel)
-            ret = msgBox.exec()
-        else:
-            # Cargamos el Plot3DView en la pagina principal
-            self.inputTCAD = CreateInputTCAD(pathfolder, data=self.track)
-            if self.inputTCAD.error:
-                msgBox = QMessageBox()
-                msgBox.setText("Archivo creado con exito!")
-                msgBox.setStandardButtons(QMessageBox.Cancel)
-                ret = msgBox.exec()
-            else:
-                msgBox = QMessageBox()
-                msgBox.setText("No se puede crear un INPUT para TCAD.")
-                msgBox.setStandardButtons(QMessageBox.Cancel)
-                ret = msgBox.exec()
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
@@ -2323,11 +2305,10 @@ class VentanaPrincipal(QMainWindow):
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
 
-        self.mpl_can = Plot3DView(data=data_dict)
+        self.mpl_can = Plot3DView()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.mpl_can)
         self.central_widget.setCurrentWidget(self.mpl_can)
-
 
     def load_file(self):
 
@@ -2353,7 +2334,6 @@ class VentanaPrincipal(QMainWindow):
             # la agregamos a la ventana principal
             self.central_widget.addWidget(self.mpl_can)
             self.central_widget.setCurrentWidget(self.mpl_can)
-
 
     def save_file(self):
         opciones = QFileDialog.Options()
