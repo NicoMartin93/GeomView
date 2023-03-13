@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import numpy as np
 import plotly.graph_objects as go
 from GeomView.main import MainWindow
@@ -157,6 +158,8 @@ class LoadDataFileInput():
 
                     if bloq.find('Source') != -1:
                         self.Source = self.__Source_Cyl(self.__string_list, self.__num_bloq)
+                    if bloq.find('Input phase-space') != -1:
+                        self.PhaseSpace = self.__Input_Phase_Space_Main(self.__string_list, self.__num_bloq)
                     if bloq.find('Material data') != -1:
                         self.Materials = self.__Material_Cyl(self.__string_list, self.__num_bloq)
                     if bloq.find('Interaction forcing') != -1:
@@ -181,6 +184,8 @@ class LoadDataFileInput():
 
                     if bloq.find('Source') != -1:
                         self.Source = self.__Source_Main(self.__string_list, self.__num_bloq)
+                    if bloq.find('Input phase-space') != -1:
+                        self.PhaseSpace = self.__Input_Phase_Space_Main(self.__string_list, self.__num_bloq)
                     if bloq.find('Material data') != -1:
                         self.Materials = self.__Material_Main(self.__string_list, self.__num_bloq)
                     if bloq.find('Geometry definition') != -1:
@@ -303,6 +308,8 @@ class LoadDataFileInput():
 
                 if bloq.find('Source') != -1:
                     self.Source = self.__Source_Cyl(self.__string_list, self.__num_bloq)
+                if bloq.find('Input phase-space') != -1:
+                    self.PhaseSpace = self.__Input_Phase_Space_Main(self.__string_list, self.__num_bloq)
                 if bloq.find('Material data') != -1:
                     self.Materials = self.__Material_Cyl(self.__string_list, self.__num_bloq)
                 if bloq.find('Interaction forcing') != -1:
@@ -722,6 +729,61 @@ class LoadDataFileInput():
         # (6) Cargamos el archivo nuevamente
         self.__reload_file()
 
+    def modify_detectors(self, ndetectors, emin, emax, nbins):
+
+        # Para PRUEBAS DE CODIGO
+        # path = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\Efficient_Detector_Si\Code\RUN\penmain_2018\input\input.in'
+        # path = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018\input\input_spectr.in'
+        # file = open(path)
+        # string_list = file.readlines()
+        # file.close()
+
+        # Tomamos el texto completo y lo almacenamos en string_list
+        string_list = self.__string_list
+
+        # (1) Separamos en bloques
+
+        blocks_limits = []
+        for i,line in enumerate(string_list):
+            # Si la linea empieza con 0 o C\n.
+            if line.startswith('       >>>>>>>>'):
+                print(i)
+                for j,line1 in enumerate(string_list[i+1:]):
+                    if line1.startswith('       >>>>>>>>'):
+                        blocks_limits.append([i,i+j+1])
+                        break
+                    if line1.startswith('END '):
+                        blocks_limits.append([i,i+j+1])
+                        break
+            if line.startswith('END '):
+                blocks_limits.append([i,i])
+
+        # Modificamos los bloques de IMPACT y ENERGY DEPOSITION
+        for i,block in enumerate(blocks_limits):
+
+            if string_list[block[0]].startswith('       >>>>>>>> Impact detectors'):
+                new_string_list = string_list[:block[0]+1]
+                for j in range(1,ndetectors+1):
+                    new_string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'0','0'))
+                    new_string_list.append('IDBODY {}\n'.format(j))
+                new_string_list.append('       .\n')
+
+            if string_list[block[0]].startswith('       >>>>>>>> Energy deposition detectors'):
+                new_string_list.append('       >>>>>>>> Energy deposition detectors (up to 25)\n')
+                for j in range(1,ndetectors+1):
+                    new_string_list.append('ENDETC {} {} {}                  [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins))
+                    new_string_list.append('EDBODY {}\n'.format(j))
+                new_string_list.append('       .\n')
+
+            if string_list[block[0]].startswith('       >>>>>>>> Job properties\n'):
+                for line in string_list[block[0]:block[1]]:
+                    new_string_list.append(line)
+
+            if string_list[ block[0]].startswith('END'):
+                new_string_list.append(string_list[block[0]])
+
+        return new_string_list
+
     # PENMAIN
 
     class __Source_Main():
@@ -789,6 +851,51 @@ class LoadDataFileInput():
 
                                 if string[0].startswith("SPYRAM"):
                                     self.SPYRAM = {n:f for (f,n) in zip(string[1:],spyram_sub)}
+
+    class __Input_Phase_Space_Main():
+
+        def __init__(self, string_list, num_bloq):
+            # Instance Variable
+                # Procesamos los datos.
+            self.__data_process(string_list, num_bloq)
+
+        def __data_process(self, string_list, num_bloq):
+
+            for i in range(len(num_bloq)-1):
+
+                if num_bloq[i][1].find('phase-space') != -1:
+
+                    list_param = ['IPSFN', 'IPSPLI', 'WGTWIN', 'EPMAX']
+
+                    wgtwin_sub = ['WGMIN','WGMAX']
+
+                    for i, row_string in enumerate(string_list):
+                        for j, param in enumerate(list_param):
+
+                            if row_string.startswith(param):
+
+                                # Quitamos el comentario entre corchetes, si tiene.
+                                init = row_string.find('[')
+                                string = row_string[:init]
+
+                                # Quitamos los espacios y caracteres innecesarios.
+                                string = ' '.join(re.split(r'[\s,;,>,\],\[]+',string)).lstrip(' ')
+
+                                # Separamos los datos en una lista y quitamos los espacios vacios
+                                string = [f for f in string.split(' ') if f]
+
+                                # Separamos los datos
+                                if string[0].startswith("IPSFN"):
+                                    self.IPSFN = [f for f in string[1:]]
+
+                                if string[0].startswith("IPSPLI"):
+                                    self.IPSPLI = [f for f in string[1:]]
+
+                                if string[0].startswith("WFTWIN"):
+                                    self.WFTWIN = {n:f for (f,n) in zip(string[1:],spectr_sub)}
+
+                                if string[0].startswith("EPMAX"):
+                                    self.SBODY = [f for f in string[1:]]
 
     class __Material_Main():
 
@@ -2561,9 +2668,16 @@ class Plot3DView(QWidget):
         self._radio.setValue(0)
         init_widget(self._radio, "radio")
 
+        self._translate = QDoubleSpinBox()
+        self._translate.setPrefix("")
+        self._translate.setValue(0)
+        self._translate.setRange(-100, 100)
+        init_widget(self._translate, "translate")
+
         self._xdim = QDoubleSpinBox()
         self._xdim.setPrefix("X: ")
         self._xdim.setValue(0)
+        self._xdim.setGeometry(100, 100, 150, 40)
         init_widget(self._xdim, "xdim")
 
         self._ydim = QDoubleSpinBox()
@@ -2576,12 +2690,72 @@ class Plot3DView(QWidget):
         self._zdim.setValue(0)
         init_widget(self._zdim, "zdim")
 
+        self._xs = QDoubleSpinBox()
+        self._xs.setPrefix("X: ")
+        self._xs.setValue(0)
+        init_widget(self._xs, "xs")
+
+        self._ys = QDoubleSpinBox()
+        self._ys.setPrefix("Y: ")
+        self._ys.setValue(0)
+        init_widget(self._ys, "ys")
+
+        self._zs = QDoubleSpinBox()
+        self._zs.setPrefix("Z: ")
+        self._zs.setValue(0)
+        init_widget(self._zs, "zs")
+
+        self._xd = QDoubleSpinBox()
+        self._xd.setPrefix("X: ")
+        self._xd.setValue(0)
+        init_widget(self._xd, "xd")
+
+        self._yd = QDoubleSpinBox()
+        self._yd.setPrefix("Y: ")
+        self._yd.setValue(0)
+        init_widget(self._ys, "yd")
+
+        self._zd = QDoubleSpinBox()
+        self._zd.setPrefix("Z: ")
+        self._zd.setValue(0)
+        init_widget(self._zd, "zd")
+
         # Boton de ejecución para visualizar el plot elegido
         self.button_view = QPushButton("View")
         init_widget(self.button_view, "view_label")
 
-        self.button_text = QPushButton("Generar")
+        self.button_text = QPushButton("Generar Geometría")
         init_widget(self.button_text, "generar_label")
+
+        # -----
+        self._emin = QDoubleSpinBox()
+        self._emin.setPrefix("Energía mínima: ")
+        self._emin.setValue(0)
+        self._emin.setRange(1000, 1000000000)
+        init_widget(self._emin, "emin")
+
+        self._emax = QDoubleSpinBox()
+        self._emax.setPrefix("Energía máxima: ")
+        self._emax.setValue(0)
+        self._emax.setRange(1000, 1000000000)
+        init_widget(self._emax, "emax")
+
+        self._nbins = QDoubleSpinBox()
+        self._nbins.setPrefix("Num Bins: ")
+        self._nbins.setValue(1)
+        self._nbins.setRange(1, 800)
+        init_widget(self._nbins, "nbins")
+
+        self._nprim = QDoubleSpinBox()
+        self._nprim.setPrefix("Primarios: ")
+        self._nprim.setValue(0)
+        self._nprim.setRange(1, 1000000000)
+        init_widget(self._nprim, "nprimarios")
+
+        self.button_input = QPushButton("Generar Input")
+        init_widget(self.button_input, "input_label")
+
+        # -----
 
         # (2) Agregamos widgets al panel
         self.llayout = QVBoxLayout()
@@ -2590,40 +2764,58 @@ class Plot3DView(QWidget):
         self.label1 = QLabel("CONFIGURACIÓN VISUAL DE ANILLOS DETECTORES")
         self.label1.setStyleSheet("border: 2px solid gray; position: center;")
         self.llayout.addWidget(self.label1)
-
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Plano:"))
         self.llayout.addWidget(self._plane)
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Número de detectores:"))
         self.llayout.addWidget(self._nplane)
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Material:"))
         self.llayout.addWidget(self._materials)
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Radio del cinturon:"))
         self.llayout.addWidget(self._radio)
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(QLabel("Dimensiones de los detectores:"))
         self.llayout.addWidget(self._xdim)
         self.llayout.addWidget(self._ydim)
         self.llayout.addWidget(self._zdim)
+        self.llayout.addWidget(QLabel("Trasladar detectores:"))
+        self.llayout.addWidget(self._translate)
+        # self.llayout.addWidget(QLabel("Posición de la fuente:"))
+        # self.horizontalLayou = QHBoxLayout()
+        # self.horizontalLayou.addWidget(self._xs)
+        # self.horizontalLayou.addWidget(self._ys)
+        # self.horizontalLayou.addWidget(self._zs)
+        # self.llayout.addWidget(self.horizontalLayou)
+        # self.llayout.addWidget(QLabel("Dirección de la fuente:"))
+        # self.llayout.addWidget(self._xd)
+        # self.llayout.addWidget(self._yd)
+        # self.llayout.addWidget(self._zd)
         self.llayout.addWidget(QLabel("Visualizar geometría"))
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(self.button_view)
         self.llayout.addWidget(QLabel(""))
-        self.label2 = QLabel("               ARCHIVO DE GEOMETRIA-PENELOPE")
+
+        # ---
+        self.label2 = QLabel("             ARCHIVO DE GEOMETRIA-PENELOPE")
         self.label2.setStyleSheet("border: 2px solid gray; position: center;")
         self.llayout.addWidget(self.label2)
-        self.llayout.addWidget(QLabel(""))
         self.llayout.addWidget(self.button_text)
         self.llayout.addWidget(QLabel(""))
+
+        # ---
+        self.label3 = QLabel("               ARCHIVO DE INPUT-PENELOPE")
+        self.label3.setStyleSheet("border: 2px solid gray; position: center;")
+        self.llayout.addWidget(self.label3)
+        self.llayout.addWidget(self._emin)
+        self.llayout.addWidget(self._emax)
+        self.llayout.addWidget(self._nbins)
+        self.llayout.addWidget(self._nprim)
+        self.llayout.addWidget(self.button_input)
+
         self.llayout.addStretch()
 
 
         # (3) Agregamos las conexiones
         self.button_view.clicked.connect(self.__ViewPlanes)
-        self.button_text.clicked.connect(self.__ConstructInput)
+        self.button_text.clicked.connect(self.__ConstructGeometry)
+        self.button_input.clicked.connect(self.__ConstructInput)
 
         # --------------------------------------------------
         # # Panel DERECHO - Definición de configuraciones
@@ -2637,6 +2829,7 @@ class Plot3DView(QWidget):
 
     def __PutTogetherPlanes(self, plane, alpha, radio, dimensions):
 
+        translate = int(self._translate.value())
         xdim, ydim, zdim = dimensions
 
         # Definimos el plano
@@ -2676,7 +2869,11 @@ class Plot3DView(QWidget):
             vp_mean = np.mean(vp, axis=0)
             vp = vp - vp_mean
 
+            # Corremos los detectores al valor del radio
             vp = vp + vp1/np.linalg.norm(vp1) * radio
+
+            # Trasladamos en la dirección Z
+            vp = vp + np.array([0,0,translate])
             # vp = vp - np.array([radio,radio,0])
             Z = vp
 
@@ -2969,7 +3166,7 @@ class Plot3DView(QWidget):
 
         return a,b,c,d
 
-    def __ConstructInput(self):
+    def __ConstructGeometry(self):
 
         nplanes = int(self._nplane.value())+1
         plane = str(self._plane.currentText())
@@ -3016,7 +3213,7 @@ class Plot3DView(QWidget):
             for i,vert in enumerate(verts):
                 p1,p2,p3,p4 = vert
                 a,b,c,d = self.__GetPlaneCoefficient(p1,p2,p3,p4)
-                print(a,b,c,d)
+                # print(a,b,c,d)
                 # Corregimos un error de escritura
                 if a==-0.0:
                     a=0.0
@@ -3123,14 +3320,14 @@ class Plot3DView(QWidget):
         string_list.append("END      0000000000000000000000000000000000000000000000000000000")
 
         self.geometryFile = string_list
-        self.__save_file(string_list)
+        self.__save_file_geometry(string_list)
 
-    def __save_file(self, string_list):
+    def __save_file_geometry(self, string_list):
 
         opciones = QFileDialog.Options()
         opciones |= QFileDialog.DontUseNativeDialog
         pathfile, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "",
-                                                  "Archivos de texto (*.dat);;Todos los archivos (*)",
+                                                  "Archivos de texto (*.geo);;Todos los archivos (*)",
                                                   options=opciones)
 
         basename = os.path.basename(pathfile)
@@ -3141,11 +3338,104 @@ class Plot3DView(QWidget):
             ret = msgBox.exec()
         else:
             # pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_simulated.geo')
+            self.pathfile_geometry = pathfile
+            my_file = open('{}'.format(pathfile),'w')
+            new_file_contents = "".join(string_list)
+            my_file.write(new_file_contents)
+            my_file.close()
+
+    # ======== GENERADOR DE INPUT PENELOPE ========
+
+    def __save_file_input(self, string_list):
+
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfile, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "",
+                                                  "Archivos de texto (*.in);;Todos los archivos (*)",
+                                                  options=opciones)
+
+        basename = os.path.basename(pathfile)
+        if basename.split('.')[-1] != "in":
+            msgBox = QMessageBox()
+            msgBox.setText("No se puede cargar este formato de archivos.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+        else:
 
             my_file = open('{}'.format(pathfile),'w')
             new_file_contents = "".join(string_list)
             my_file.write(new_file_contents)
             my_file.close()
+
+    def __ConstructInput(self):
+
+        emin = self._emin.value()
+        emin = '%e' % emin
+
+        emax = self._emax.value()
+        emax = '%e' % emax
+
+        nbins = int(self._nbins.value())
+
+        nprimarios = self._nprim.value()
+        nprimarios = '%e' % nprimarios
+
+        ndetectors = int(self._nplane.value())+1
+
+        material = str(self._materials.currentText())
+
+
+        # # Creamos una lista que contenga el script de INPUT
+        string_list = []
+
+        # (1) Agregamos el titulo al INPUT -----------------------------------------
+        title = ['TITLE  Response of a CdTe detector.\n',
+                '       .\n',
+                '       >>>>>>>> Input phase-space file (psf).\n'
+                'IPSFN  PhaseSpace.dat          [Input psf name, up to 20 characters]\n',
+                '       .\n',
+                '       >>>>>>>> Material data and simulation parameters.\n',
+                'MFNAME .\mat\{}.mat                 [Material file, up to 20 chars]'.format(material),
+                'MSIMPA 1.0e3 1.0e3 1.0e3 0.1 0.1 2e3 2e3    [EABS(1:3),C1,C2,WCC,WCR]\n',
+                '       .\n',
+                '       >>>>>>>> Geometry definition file.\n',
+                'GEOMFN .\geo\detector.geo             [Geometry file, up to 20 chars]\n',
+                '       .\n']
+
+        for line in title:
+            string_list.append(line)
+
+        # Modificamos los bloques de IMPACT y ENERGY DEPOSITION
+
+        # Impact
+        string_list.append('       >>>>>>>> Impact detectors (up to 25 different detectors).\n')
+        for j in range(1,ndetectors+1):
+            string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'0','0'))
+            string_list.append('IDBODY {}\n'.format(j))
+        string_list.append('       .\n')
+
+        # Energy detectors
+        string_list.append('       >>>>>>>> Energy deposition detectors (up to 25)\n')
+        for j in range(1,ndetectors+1):
+            string_list.append('ENDETC {} {} {}                  [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins))
+            string_list.append('EDBODY {}\n'.format(j))
+        string_list.append('       .\n')
+
+        # Agregamos el job
+        job = ['       >>>>>>>> Job properties\n',
+               'RESUME dump.dat                [Resume from this dump file, 20 chars]\n',
+               'DUMPTO dump.dat                   [Generate this dump file, 20 chars]\n',
+               'DUMPP  60\n',
+               '       .\n',
+               'NSIMSH {}                      [Desired number of simulated showers]\n'.format(nprimarios),
+               'TIME   2e9                         [Allotted simulation time, in sec]\n',
+               'END                                  [Ends the reading of input data]\n']
+
+        for line in job:
+            string_list.append(line)
+
+        self.inputFile = string_list
+        self.__save_file_input(string_list)
 
     # ========= TYPES GRAPH ===========
 
@@ -3230,11 +3520,9 @@ class VentanaPrincipal(QMainWindow):
         toolBar = QToolBar()
         self.addToolBar(toolBar)
         # Barra de botones
-        inputAction = QAction('Input', self, shortcut="Ctrl+V", triggered=self.input)
         geometryAction = QAction("Geometría", self, shortcut="Ctrl+L", triggered=self.geometry)
 
         # Agregamos las acciones
-        toolBar.addAction(inputAction)
         toolBar.addAction(geometryAction)
 
         # (2) VENTANA PRINCIPAL
