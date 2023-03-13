@@ -2677,48 +2677,38 @@ class Plot3DView(QWidget):
         self._xdim = QDoubleSpinBox()
         self._xdim.setPrefix("X: ")
         self._xdim.setValue(0)
-        self._xdim.setGeometry(100, 100, 150, 40)
+        self._xdim.setRange(-100, 100)
         init_widget(self._xdim, "xdim")
 
         self._ydim = QDoubleSpinBox()
         self._ydim.setPrefix("Y: ")
         self._ydim.setValue(0)
+        self._ydim.setRange(-100, 100)
         init_widget(self._ydim, "ydim")
 
         self._zdim = QDoubleSpinBox()
         self._zdim.setPrefix("Z: ")
         self._zdim.setValue(0)
+        self._zdim.setRange(-100, 100)
         init_widget(self._zdim, "zdim")
 
         self._xs = QDoubleSpinBox()
         self._xs.setPrefix("X: ")
         self._xs.setValue(0)
+        self._xs.setRange(-100, 100)
         init_widget(self._xs, "xs")
 
         self._ys = QDoubleSpinBox()
         self._ys.setPrefix("Y: ")
         self._ys.setValue(0)
+        self._ys.setRange(-100, 100)
         init_widget(self._ys, "ys")
 
         self._zs = QDoubleSpinBox()
         self._zs.setPrefix("Z: ")
         self._zs.setValue(0)
+        self._zs.setRange(-100, 100)
         init_widget(self._zs, "zs")
-
-        self._xd = QDoubleSpinBox()
-        self._xd.setPrefix("X: ")
-        self._xd.setValue(0)
-        init_widget(self._xd, "xd")
-
-        self._yd = QDoubleSpinBox()
-        self._yd.setPrefix("Y: ")
-        self._yd.setValue(0)
-        init_widget(self._ys, "yd")
-
-        self._zd = QDoubleSpinBox()
-        self._zd.setPrefix("Z: ")
-        self._zd.setValue(0)
-        init_widget(self._zd, "zd")
 
         # Boton de ejecución para visualizar el plot elegido
         self.button_view = QPushButton("View")
@@ -2760,44 +2750,50 @@ class Plot3DView(QWidget):
         # (2) Agregamos widgets al panel
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
-        self.llayout.addWidget(QLabel(""))
+
         self.label1 = QLabel("CONFIGURACIÓN VISUAL DE ANILLOS DETECTORES")
         self.label1.setStyleSheet("border: 2px solid gray; position: center;")
         self.llayout.addWidget(self.label1)
+
         self.llayout.addWidget(QLabel("Plano:"))
         self.llayout.addWidget(self._plane)
+
         self.llayout.addWidget(QLabel("Número de detectores:"))
         self.llayout.addWidget(self._nplane)
+
         self.llayout.addWidget(QLabel("Material:"))
         self.llayout.addWidget(self._materials)
+
         self.llayout.addWidget(QLabel("Radio del cinturon:"))
         self.llayout.addWidget(self._radio)
+
         self.llayout.addWidget(QLabel("Dimensiones de los detectores:"))
-        self.llayout.addWidget(self._xdim)
-        self.llayout.addWidget(self._ydim)
-        self.llayout.addWidget(self._zdim)
+        self.horizontalLayou1 = QHBoxLayout()
+        self.horizontalLayou1.addWidget(self._xdim)
+        self.horizontalLayou1.addWidget(self._ydim)
+        self.horizontalLayou1.addWidget(self._zdim)
+        self.llayout.addLayout(self.horizontalLayou1)
+
         self.llayout.addWidget(QLabel("Trasladar detectores:"))
         self.llayout.addWidget(self._translate)
-        # self.llayout.addWidget(QLabel("Posición de la fuente:"))
-        # self.horizontalLayou = QHBoxLayout()
-        # self.horizontalLayou.addWidget(self._xs)
-        # self.horizontalLayou.addWidget(self._ys)
-        # self.horizontalLayou.addWidget(self._zs)
-        # self.llayout.addWidget(self.horizontalLayou)
-        # self.llayout.addWidget(QLabel("Dirección de la fuente:"))
-        # self.llayout.addWidget(self._xd)
-        # self.llayout.addWidget(self._yd)
-        # self.llayout.addWidget(self._zd)
+
+        self.llayout.addWidget(QLabel("Posición de la fuente:"))
+        self.horizontalLayou2 = QHBoxLayout()
+        self.horizontalLayou2.addWidget(self._xs)
+        self.horizontalLayou2.addWidget(self._ys)
+        self.horizontalLayou2.addWidget(self._zs)
+        self.llayout.addLayout(self.horizontalLayou2)
+
         self.llayout.addWidget(QLabel("Visualizar geometría"))
         self.llayout.addWidget(self.button_view)
-        self.llayout.addWidget(QLabel(""))
+        # self.llayout.addWidget(QLabel(""))
 
         # ---
         self.label2 = QLabel("             ARCHIVO DE GEOMETRIA-PENELOPE")
         self.label2.setStyleSheet("border: 2px solid gray; position: center;")
         self.llayout.addWidget(self.label2)
         self.llayout.addWidget(self.button_text)
-        self.llayout.addWidget(QLabel(""))
+        # self.llayout.addWidget(QLabel(""))
 
         # ---
         self.label3 = QLabel("               ARCHIVO DE INPUT-PENELOPE")
@@ -2829,6 +2825,7 @@ class Plot3DView(QWidget):
 
     def __PutTogetherPlanes(self, plane, alpha, radio, dimensions):
 
+        pos_source = np.array([float(self._xs.value()), float(self._ys.value()), float(self._zs.value())])
         translate = int(self._translate.value())
         xdim, ydim, zdim = dimensions
 
@@ -2838,7 +2835,12 @@ class Plot3DView(QWidget):
             vplane = np.array([0,0,1])
 
             # Definir el angulo
-            angle = alpha * np.pi/180
+            angle_source = np.arctan2(pos_source[1],pos_source[0])
+            # angle_source = np.degrees(angle_source) % 360.0
+            if pos_source[2] == 0.0:
+                angle = alpha * np.pi/180 + angle_source
+            else:
+                angle = alpha * np.pi/180
             # Definimos el vector normal al plano del paralepipedo
             vnorm_x = np.cos(angle)
             vnorm_y = np.sin(angle)
@@ -3168,7 +3170,7 @@ class Plot3DView(QWidget):
 
     def __ConstructGeometry(self):
 
-        nplanes = int(self._nplane.value())+1
+        nplanes = int(self._nplane.value())
         plane = str(self._plane.currentText())
         material = str(self._materials.currentText())
         materials = np.array([[1,material]])
@@ -3198,7 +3200,7 @@ class Plot3DView(QWidget):
         # Definimos unidad angular de partición
         angle = 360/nplanes
         j=0
-        for n in range(1,nplanes):
+        for n in range(1,nplanes+1):
 
             Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha = n*angle, radio=radio, dimensions=dimensions)
 
@@ -3370,15 +3372,15 @@ class Plot3DView(QWidget):
     def __ConstructInput(self):
 
         emin = self._emin.value()
-        emin = '%e' % emin
+        emin = '%.1e' % emin
 
         emax = self._emax.value()
-        emax = '%e' % emax
+        emax = '%.1e' % emax
 
         nbins = int(self._nbins.value())
 
         nprimarios = self._nprim.value()
-        nprimarios = '%e' % nprimarios
+        nprimarios = '%.1e' % nprimarios
 
         ndetectors = int(self._nplane.value())+1
 
@@ -3395,7 +3397,7 @@ class Plot3DView(QWidget):
                 'IPSFN  PhaseSpace.dat          [Input psf name, up to 20 characters]\n',
                 '       .\n',
                 '       >>>>>>>> Material data and simulation parameters.\n',
-                'MFNAME .\mat\{}.mat                 [Material file, up to 20 chars]'.format(material),
+                'MFNAME .\mat\{}.mat                 [Material file, up to 20 chars]\n'.format(material),
                 'MSIMPA 1.0e3 1.0e3 1.0e3 0.1 0.1 2e3 2e3    [EABS(1:3),C1,C2,WCC,WCR]\n',
                 '       .\n',
                 '       >>>>>>>> Geometry definition file.\n',
