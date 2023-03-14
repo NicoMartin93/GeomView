@@ -2462,9 +2462,11 @@ class CircleDetectors():
         # Definimos unidad angular de partición
         angle = 360/nplanes
         j=0
-        for n in range(1,nplanes):
-
-            Z, verts =  self.PutTogetherPlanes(plane=plane, alpha = n*angle, radio=radio, dimensions=dimensions)
+        for n in range(0,nplanes+1):
+            print(n)
+            alpha=n*angle
+            print(alpha)
+            Z, verts =  self.PutTogetherPlanes(plane=plane, alpha=alpha , radio=radio, dimensions=dimensions)
 
             i_detector = ["C\n",
                           "C  **** Detector {}\n".format(n),
@@ -2593,10 +2595,10 @@ class CircleDetectors():
         my_file.close()
     # ----
 
-# # PRIMERA FORMA
+# # # PRIMERA FORMA
 # pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
 # cdetectors = CircleDetectors(pathfolder)
-#
+# #
 
 # # GUI PARA CINTURON DE DETECTORES
 
@@ -2624,6 +2626,20 @@ def style_names(list_name):
         else:
             result.append(style)
     return result
+
+class plotsTools(QWidget):
+
+    def __init__(self):
+        super(SimulatePENELOPE, self).__init__()
+
+        self.__Layaout_Principal()
+
+        layout_Simulate = QHBoxLayout()
+        layout_Simulate.addLayout(self.llayout, 25)
+        layout_Simulate.addLayout(self.clayout, 25)
+        layout_Simulate.addLayout(self.rlayout, 50)
+        self.setLayout(layout_Simulate)
+
 
 class SimulatePENELOPE(QWidget):
 
@@ -2876,6 +2892,8 @@ class Plot3DView(QWidget):
         self._zdim.setRange(-100, 100)
         init_widget(self._zdim, "zdim")
 
+        self.sourcePut = QCheckBox("¿Considerar posición de la fuente?",self)
+
         self._xs = QDoubleSpinBox()
         self._xs.setPrefix("X: ")
         self._xs.setValue(0)
@@ -2961,12 +2979,17 @@ class Plot3DView(QWidget):
         self.llayout.addWidget(QLabel("Trasladar detectores:"))
         self.llayout.addWidget(self._translate)
 
+        self.llayout.addWidget(self.sourcePut)
         self.llayout.addWidget(QLabel("Posición de la fuente:"))
         self.horizontalLayou2 = QHBoxLayout()
         self.horizontalLayou2.addWidget(self._xs)
         self.horizontalLayou2.addWidget(self._ys)
         self.horizontalLayou2.addWidget(self._zs)
+        self._xs.setVisible(False)
+        self._ys.setVisible(False)
+        self._zs.setVisible(False)
         self.llayout.addLayout(self.horizontalLayou2)
+
 
         self.llayout.addWidget(QLabel("Visualizar geometría"))
         self.llayout.addWidget(self.button_view)
@@ -2996,7 +3019,7 @@ class Plot3DView(QWidget):
         self.button_view.clicked.connect(self.__ViewPlanes)
         self.button_text.clicked.connect(self.__ConstructGeometry)
         self.button_input.clicked.connect(self.__ConstructInput)
-
+        self.sourcePut.stateChanged.connect(self.__sourcePut)
         # --------------------------------------------------
         # # Panel DERECHO - Definición de configuraciones
 
@@ -3004,6 +3027,20 @@ class Plot3DView(QWidget):
         self.cllayout.setContentsMargins(1, 1, 1, 1)
         self.browser = QWebEngineView(self)
         self.cllayout.addWidget(self.browser)
+
+    def __sourcePut(self, state):
+
+        if state == Qt.Checked:
+            self._xs.setVisible(True)
+            self._ys.setVisible(True)
+            self._zs.setVisible(True)
+            self._activeSource = True
+        else:
+            self._xs.setVisible(False)
+            self._ys.setVisible(False)
+            self._zs.setVisible(False)
+            self._activeSource = False
+
 
     # ========= FUNCIONES DE CALCULO ==========
 
@@ -3381,12 +3418,17 @@ class Plot3DView(QWidget):
 
         # (2) Creamos las superficies y los bodys para los detectores---------------
 
+        if self._activeSource:
+            m=1
+        else:
+            m=0
+
         # Definimos unidad angular de partición
         angle = 360/nplanes
         j=0
-        for n in range(1,nplanes+1):
 
-            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha = n*angle, radio=radio, dimensions=dimensions)
+        for n in range(m,nplanes):
+            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=n*angle, radio=radio, dimensions=dimensions)
 
             i_detector = ["C\n",
                           "C  **** Detector {}\n".format(n),
@@ -3632,9 +3674,14 @@ class Plot3DView(QWidget):
         radio = self._radio.value()
         dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
 
+        if self._activeSource:
+            m=1
+        else:
+            m=0
+
         angle = 360/nplanes
         list_bodys = []
-        for n in range(1,nplanes):
+        for n in range(m,nplanes):
 
             Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=angle*n, radio=radio, dimensions=dimensions)
 
@@ -3706,10 +3753,10 @@ class VentanaPrincipal(QMainWindow):
         toolBar = QToolBar()
         self.addToolBar(toolBar)
         # Barra de botones
-        geometryAction = QAction("Geometría Detector", self, shortcut="Ctrl+L", triggered=self.geometryDetector)
-        circleAction = QAction("Circulo Detectores", self, shortcut="Ctrl+L", triggered=self.geometryCircle)
-        simulateAction = QAction("Simualción", self, shortcut="Ctrl+L", triggered=self.simulatedPenelope)
-        plotsAction = QAction("Plots", self, shortcut="Ctrl+L", triggered=self.plotsTools)
+        geometryAction = QAction("Geometría Detector", self, shortcut="Ctrl+L", triggered=self.__geometryDetector)
+        circleAction = QAction("Circulo Detectores", self, shortcut="Ctrl+L", triggered=self.__geometryCircle)
+        simulateAction = QAction("Simualción", self, shortcut="Ctrl+L", triggered=self.__simulatedPenelope)
+        plotsAction = QAction("Plots", self, shortcut="Ctrl+L", triggered=self.__plotsTools)
         # Agregamos las acciones
         toolBar.addAction(geometryAction)
         toolBar.addAction(circleAction)
@@ -3720,33 +3767,33 @@ class VentanaPrincipal(QMainWindow):
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
 
-    def geometryDetector(self):
+    def __geometryDetector(self):
 
         self.mpl_can = Plot3DView()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.mpl_can)
         self.central_widget.setCurrentWidget(self.mpl_can)
 
-    def geometryCircle(self):
+    def __geometryCircle(self):
 
         self.mpl_can = Plot3DView()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.mpl_can)
         self.central_widget.setCurrentWidget(self.mpl_can)
 
-    def simulatedPenelope(self):
+    def __simulatedPenelope(self):
 
         self.__sPen = SimulatePENELOPE()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.__sPen)
         self.central_widget.setCurrentWidget(self.__sPen)
 
-    def plotsTools(self):
+    def __plotsTools(self):
 
-        self.mpl_can = Plot3DView()
+        self.plotsTools = plotsTools()
         # la agregamos a la ventana principal
-        self.central_widget.addWidget(self.mpl_can)
-        self.central_widget.setCurrentWidget(self.mpl_can)
+        self.central_widget.addWidget(self.plotsTools)
+        self.central_widget.setCurrentWidget(self.plotsTools)
 
     def load_file(self):
 
