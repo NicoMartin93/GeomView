@@ -2625,6 +2625,190 @@ def style_names(list_name):
             result.append(style)
     return result
 
+class SimulatePENELOPE(QWidget):
+
+    def __init__(self):
+        super(SimulatePENELOPE, self).__init__()
+
+        self.__Layaout_Principal()
+
+        layout_Simulate = QHBoxLayout()
+        layout_Simulate.addLayout(self.llayout, 40)
+        layout_Simulate.addLayout(self.clayout, 30)
+        layout_Simulate.addLayout(self.rlayout, 30)
+        self.setLayout(layout_Simulate)
+
+    def __Layaout_Principal(self):
+
+        # Boton para cargar input
+        self.button_input = QPushButton("Load Input")
+        init_widget(self.button_input, "load_input")
+        self.textbox_input = QLineEdit()
+
+        # Boton para cargar geometria
+        self.button_geom = QPushButton("Load Geometry")
+        init_widget(self.button_geom, "load_geometry")
+        self.textbox_geom = QLineEdit()
+
+        # Boton para cargar ejecutable
+        self.button_exe = QPushButton("Load Exe")
+        init_widget(self.button_exe, "load_exe")
+        self.textbox_exe = QLineEdit()
+
+        # Conexiones con los botones
+        self.button_input.clicked.connect(self.loadFileInput)
+        self.button_geom.clicked.connect(self.loadFileGeo)
+        self.button_exe.clicked.connect(self.loadFileExe)
+
+        # ---- llayout
+        self.llayout = QVBoxLayout()
+        self.llayout.setContentsMargins(1, 1, 1, 1)
+
+        self.label1 = QLabel("CARGAR ARCHIVOS PARA SIMULACIÓN")
+        self.label1.setStyleSheet("border: 2px solid gray; position: center;")
+        self.llayout.addWidget(self.label1)
+
+        self.llayout.addWidget(QLabel("Archivo Input:"))
+        self.horizontalLayou1 = QHBoxLayout()
+        self.horizontalLayou1.addWidget(self.button_input)
+        self.horizontalLayou1.addWidget(self.textbox_input)
+        self.llayout.addLayout(self.horizontalLayou1)
+
+        self.llayout.addWidget(QLabel("Archivo Geometría:"))
+        self.horizontalLayou2 = QHBoxLayout()
+        self.horizontalLayou2.addWidget(self.button_geom)
+        self.horizontalLayou2.addWidget(self.textbox_geom)
+        self.llayout.addLayout(self.horizontalLayou2)
+
+        self.llayout.addWidget(QLabel("Archivo Ejecutable:"))
+        self.horizontalLayou3 = QHBoxLayout()
+        self.horizontalLayou3.addWidget(self.button_exe)
+        self.horizontalLayou3.addWidget(self.textbox_exe)
+        self.llayout.addLayout(self.horizontalLayou3)
+
+        self.llayout.addStretch()
+        # ----
+
+        self.clayout = QVBoxLayout()
+        self.clayout.setContentsMargins(1, 1, 1, 1)
+
+        self.rlayout = QVBoxLayout()
+        self.rlayout.setContentsMargins(1, 1, 1, 1)
+
+    def loadFileExe(self):
+
+        # Creamos la ventana emergente para que se pueda seleccionar el archivo.
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfile, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo Ejecutable", "",
+                                                  "Archivos ejecutable (*.exe);;Archivos de texto (*.txt);;Todos los archivos (*)",
+                                                  options=opciones)
+        basename = os.path.basename(pathfile)
+        if basename.split('.')[-1] != "exe":
+            msgBox = QMessageBox()
+            msgBox.setText("No se puede cargar ese tipo de archivos.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+        else:
+            # Cargamos el archivo seleccionado.
+            self.pathFileExe = pathfile
+            self.textbox_exe.setText(os.path.basename(self.pathFileExe))
+
+    def loadFileGeo(self):
+
+        # Creamos la ventana emergente para que se pueda seleccionar el archivo.
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfile, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo de geometría", "",
+                                                  "Archivos de geometría (*.geo);;Archivos de texto (*.txt);;Todos los archivos (*)",
+                                                  options=opciones)
+        basename = os.path.basename(pathfile)
+        if basename.split('.')[-1] != "geo":
+            msgBox = QMessageBox()
+            msgBox.setText("No se puede cargar ese tipo de archivos.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+        else:
+            # Cargamos el archivo seleccionado.
+            self.pathFileGeom = pathfile
+            self.textbox_geom.setText(os.path.basename(self.pathFileGeom))
+
+    def loadFileInput(self):
+
+        # Creamos la ventana emergente para que se pueda seleccionar el archivo.
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfile, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo Input", "",
+                                                  "Archivos de entrada (*.in);;Archivos de texto (*.txt);;Todos los archivos (*)",
+                                                  options=opciones)
+        basename = os.path.basename(pathfile)
+        if basename.split('.')[-1] != "in":
+            msgBox = QMessageBox()
+            msgBox.setText("No se puede cargar ese tipo de archivos.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+        else:
+            # Cargamos el archivo seleccionado.
+            self.pathFileInput = pathfile
+            self.textbox_input.setText(os.path.basename(self.pathFileInput))
+
+    def start_simulation(self):
+
+        pathPen = self.pathFileExe.split('\\')[:-1]
+
+        # ------------------------------------------
+        # Removemos los datos que quedaron en RUN.
+        path_data = [os.path.join(pathPen, f) for f in os.listdir(pathPen)
+            if os.path.isfile(os.path.join(path_pen, f)) and
+            (f.endswith('.dat') or f.endswith('.rep')) and not f.startswith('PhaseSpace')]
+        if len(path_data) > 0:
+            for pathfile in path_data:
+                os.remove(pathfile)
+
+        # -------------------------------------------
+        # # GEOMETRIA
+        # (1) Cargamos la GEOMETRIA
+        path_geo = self.pathFileGeom
+
+        # -------------------------------------------
+        # # INPUT
+        # (1) Cargamos el INPUT
+        path_input = self.pathFileInput
+
+        # -------------------------------------------
+        # # SIMULACION
+        os.system('cls')
+        print('-------------------------------------------------------')
+        print('INICIO de simulación para un espectro energético: MonoE')
+        print('-------------------------------------------------------\n')
+
+        # --------------------------------------------------------
+        # # Introducimos el input en el ejecutable.
+        path_cwd = os.path.join('D:\\',*path_exe.split('\\')[1:-1])
+        process = subprocess.Popen([path_exe, '<', path_input], shell=True, cwd=path_cwd)
+        process.wait()
+
+        # --------------------------------------------------------
+        # # Movemos los resultados a la carpeta RESULTS
+
+        pathResult = os.path.join('D:\\', *self.pathFileExe.split('\\')[1:-3], 'RESULTS')
+
+        path_data = [os.path.join(pathPen, f) for f in os.listdir(pathPen)
+            if os.path.isfile(os.path.join(pathPen, f)) and
+            (f.endswith('.dat') or f.endswith('.rep')) and not f.startswith('PhaseSpace')]
+
+
+        dest_folder = os.path.join(pathResult, 'Monoenergetic_{}'.format(e))
+        if not os.path.lexists(dest_folder):
+            os.makedirs(dest_folder)
+
+        for j in path_data:
+            shutil.move(j, dest_folder)
+
+        print('----------------------------------------------------')
+        print('FIN de simulación para un espectro energético: MonoE')
+        print('----------------------------------------------------\n')
+
 class Plot3DView(QWidget):
 
     def __init__(self):
@@ -3522,29 +3706,47 @@ class VentanaPrincipal(QMainWindow):
         toolBar = QToolBar()
         self.addToolBar(toolBar)
         # Barra de botones
-        geometryAction = QAction("Geometría", self, shortcut="Ctrl+L", triggered=self.geometry)
-
+        geometryAction = QAction("Geometría Detector", self, shortcut="Ctrl+L", triggered=self.geometryDetector)
+        circleAction = QAction("Circulo Detectores", self, shortcut="Ctrl+L", triggered=self.geometryCircle)
+        simulateAction = QAction("Simualción", self, shortcut="Ctrl+L", triggered=self.simulatedPenelope)
+        plotsAction = QAction("Plots", self, shortcut="Ctrl+L", triggered=self.plotsTools)
         # Agregamos las acciones
         toolBar.addAction(geometryAction)
+        toolBar.addAction(circleAction)
+        toolBar.addAction(simulateAction)
+        toolBar.addAction(plotsAction)
 
         # (2) VENTANA PRINCIPAL
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
 
-    def geometry(self):
+    def geometryDetector(self):
 
         self.mpl_can = Plot3DView()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.mpl_can)
         self.central_widget.setCurrentWidget(self.mpl_can)
 
-    def input(self):
+    def geometryCircle(self):
 
         self.mpl_can = Plot3DView()
         # la agregamos a la ventana principal
         self.central_widget.addWidget(self.mpl_can)
         self.central_widget.setCurrentWidget(self.mpl_can)
 
+    def simulatedPenelope(self):
+
+        self.__sPen = SimulatePENELOPE()
+        # la agregamos a la ventana principal
+        self.central_widget.addWidget(self.__sPen)
+        self.central_widget.setCurrentWidget(self.__sPen)
+
+    def plotsTools(self):
+
+        self.mpl_can = Plot3DView()
+        # la agregamos a la ventana principal
+        self.central_widget.addWidget(self.mpl_can)
+        self.central_widget.setCurrentWidget(self.mpl_can)
 
     def load_file(self):
 
@@ -3599,3 +3801,104 @@ if __name__ == '__main__':
     mainWin.show()
 
     sys.exit(app.exec())
+
+
+
+def PSFMoveFile():
+
+    path_psf = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Simus_Rata'
+
+    path_data = [os.path.join(path_pen, f) for f in os.listdir(path_pen)
+        if os.path.isfile(os.path.join(path_pen, f)) and
+        (f.endswith('.dat') or f.endswith('.rep'))]
+
+    path_move = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018\input'
+
+    dest_folder = os.path.join(path_move)
+    if not os.path.lexists(dest_folder):
+        os.makedirs(dest_folder)
+
+    for j in path_data:
+        shutil.move(j, dest_folder)
+
+def PSFLoadFile(pathfile):
+
+    with open(pathfile) as f:
+        datos = f.readlines()
+
+    # columnas = ['KPAR', 'E', 'X','Y','Z','U','V','W','ILB1','ILB2','ILB3','ILB4', 'NSHI']
+    columnas = [[] for _ in range(len(datos[0].split()))]
+
+    for linea in datos:
+        valores = linea.split()
+        for i, val in enumerate(valores):
+            columnas[i].append(val)
+
+    # print(columnas)
+
+def simulated_penelope(path_pen=None, path_exe=None, path_result=None):
+
+
+
+# MAIN
+def XFSimulations(pathfolder):
+
+    # Limpiamos pantalla.
+    os.system('cls')
+    print('\n')
+
+    print('-------------------------------------------------------')
+    print('METODO COMBINADO DE DISTRIBUCION DE CARGA EN DETECTORES')
+    print('-------------------------------------------------------\n')
+
+    # -------------------------------------------------------------------
+    # (1) Definimos los paths de COMP, RESULT y RUN, y los path pen y exe
+
+    path_comp = os.path.join(pathfolder, 'COMP')
+    path_result = os.path.join(pathfolder, 'RESULTS')
+    path_run = os.path.join(pathfolder, 'RUN')
+
+    # -----------------------------------------------------------------
+    # (2) Definimos la actividades que se pueden realizar.
+
+    print('MENU:')
+    print('-----\n')
+
+    temp = True
+    while temp:
+
+        activity_list = ['Realizar nueva simulación', 'Plotear resultados']
+        respuesta = option_list(answer_list=activity_list, input_type='int', question=' - Acciones disponibles', return_type=False)
+
+        if respuesta == 0:
+
+            print('PRECONFIGURACIÓN:')
+            print('-----------------\n')
+
+            # Elegimos el path del PEN a utilizar
+            list_path = [f for f in os.listdir(path_run)]
+            pen = option_list(answer_list=list_path, input_type='int', question=' - Elegir PEN a utilizar')
+            path_pen = os.path.join(path_run, pen)
+
+            # Elegimos el path del ejecutable a utilizar
+            list_path = [f for f in os.listdir(path_pen) if f.endswith('.exe')]
+            exe = option_list(answer_list=list_path, input_type='int', question=' - Elegir que ejecutable utilizar')
+            path_exe = os.path.join(path_pen, exe)
+
+            simulated_penelope(path_pen=path_pen, path_exe=path_exe, path_result=path_result)
+
+        elif respuesta == 1:
+
+            # Elegimos el path del PEN a utilizar
+            list_path = [f for f in os.listdir(path_run)]
+            pen = option_list(answer_list=list_path, input_type='int', question=' - Elegir PEN a utilizar')
+            path_pen = os.path.join(path_run, pen)
+
+            plot_show = PlotTools
+            plot_show.PlotTools(path_results=path_result, path_pen=path_pen)
+
+        respuesta = option_list(input_type='string', question=' - ¿Desea continuar?', return_type=False)
+        if respuesta:
+            temp = True
+        else:
+            temp = False
