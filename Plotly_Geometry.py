@@ -1,8 +1,10 @@
+
 import os
 import sys
 import re
 import numpy as np
 import plotly.graph_objects as go
+import subprocess
 from GeomView.main import MainWindow
 #
 
@@ -24,109 +26,1203 @@ from PyQt5.QtGui import QPixmap
 
 import matplotlib.pyplot as plt
 
+import matplotlib
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
+from matplotlib.figure import Figure
+import matplotlib.image as mpimg
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import matplotlib.ticker as mtick
+from matplotlib import cm
+from matplotlib.colors import Normalize
+import matplotlib.pyplot as mpl
+from matplotlib.widgets import Slider, Button, CheckButtons
 
-# class Plotly_Geometry:
-#
-#     def __init__(self):
-#         tuki=0
-#
-#     def cylinder(r, h, a=0, nt=100, nv =50):
-#         """
-#         parametrize the cylinder of radius r, height h, base point a
-#         """
-#         theta = np.linspace(0, 2*np.pi, nt)
-#         v = np.linspace(a, a+h, nv )
-#         theta, v = np.meshgrid(theta, v)
-#         x = r*np.cos(theta)
-#         y = r*np.sin(theta)
-#         z = v
-#         return x, y, z
-#
-#     def boundary_circle(r, h, nt=100):
-#         """
-#         r - boundary circle radius
-#         h - height above xOy-plane where the circle is included
-#         returns the circle parameterization
-#         """
-#         theta = np.linspace(0, 2*np.pi, nt)
-#         x= r*np.cos(theta)
-#         y = r*np.sin(theta)
-#         z = h*np.ones(theta.shape)
-#         return x, y, z
-#     #
-#     # def paralepipede():
-#     #     go.Mesh3d(
-#     #     # 8 vertices of a cube
-#     #     x=[0.608, 0.608, 0.998, 0.998, 0.608, 0.608, 0.998, 0.998],
-#     #     y=[0.091, 0.963, 0.963, 0.091, 0.091, 0.963, 0.963, 0.091],
-#     #     z=[0.140, 0.140, 0.140, 0.140, 0.571, 0.571, 0.571, 0.571],
-#     #
-#     #     i = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2],
-#     #     j = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3],
-#     #     k = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6],
-#     #     opacity=0.6,
-#     #     color='#DC143C',
-#     #     flatshading = True
-#     #     )
-#     #     ])
-#
-#
-# class GetDataBody:
-#     def __init__(self):
-#
-#         mainWin = MainWindow()
-#         self.num_bodies = len(mainWin.BodyList)
-#
-#         for num_b in range(self.num_bodies):
-#             data_body = mainWin.BodyList[num_b]
-#             self.__data_surfaces = data_body['Surfaces']
-#             self.__GetBodyTypeWithSurfaces()
-#
-#     def __GetBodyTypeWithSurfaces(self):
-#
-#         surfaces = []
-#         num_surfaces = len(self.__data_surfaces)
-#         for num_s in range(num_surfaces):
-#             surface = data_surfaces['S{}'.format(num_s)]
-#             surfaces.append(surface['Type'])
-#
-#         if surfaces.count('Plane') == 2 and surfaces.count('Cylinder') == 1:
-#             type_body = 'Cylinder'
-#         elif surfaces.count('Plane') == 6:
-#             type_body = 'Parallelepiped'
-#
-#         return type_body
-#
-#     def Cylinder():
-#
-#         num_surfaces = len(self.__data_surfaces)
-#         for num_s in range(num_surfaces):
-#
-#             surface = data_surfaces['S{}'.format(num_s)]
-#             type_surface = surface['Type']
-#
-#             pos_surface = surface['Position']
-#             rot_surface = surface['Rotation']
-#             sca_surface = surface['Scale']
-#
-#
-#             if type_surface == 'Plane':
-#
-#             elif type_surface == 'Cylinder':
-#                 r = np.linalg.norm(sca_surface)
-#                 a1 =
-#
-#
-#
-#
-#
-# # ==============================================================================
-# import itertools
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 import itertools
 from itertools import groupby
 from MonteCarlo.Utils.utils import option_list, print_list_columns
+#
+# class LoadVoxGeom():
+#
+#     class Coordinate():
+#
+#         def __init__(self, xyz):
+#             self.x = xyz[0]
+#             self.y = xyz[1]
+#             self.z = xyz[2]
+#
+#     class VoxelData():
+#
+#         def __init__(self,data):
+#         print("Making voxels")
+#         self.data = data
+#         self.triangles = np.zeros((np.size(np.shape(self.data)),1))
+#         self.xyz = self.get_coords()
+#         # self.x = self.xyz[0,:]
+#         # self.y = self.xyz[1,:]
+#         # self.z = self.xyz[2,:]
+#         self.x_length = np.size(data,0)
+#         self.y_length = np.size(data,1)
+#         self.z_length = np.size(data,2)
+#         self.vert_count = 0
+#         self.vertices = self.make_edge_verts()
+#         self.triangles = np.delete(self.triangles, 0,1)
+#         #self.make_triangles()
+#
+#
+#         def get_coords(self):
+#             indices = np.nonzero(self.data)
+#             indices = np.stack((indices[0], indices[1],indices[2]))
+#             return indices
+#
+#         def has_voxel(self,neighbor_coord):
+#             return self.data[neighbor_coord[0],neighbor_coord[1],neighbor_coord[2]]
+#
+#
+#         def get_neighbor(self, voxel_coords, direction):
+#             x = voxel_coords[0]
+#             y = voxel_coords[1]
+#             z = voxel_coords[2]
+#             offset_to_check = CubeData.offsets[direction]
+#             neighbor_coord = [x+ offset_to_check[0], y+offset_to_check[1], z+offset_to_check[2]]
+#
+#             # return 0 if neighbor out of bounds or nonexistent
+#             if (any(np.less(neighbor_coord,0)) | (neighbor_coord[0] >= self.x_length) | (neighbor_coord[1] >= self.y_length) | (neighbor_coord[2] >= self.z_length)):
+#                 return 0
+#             else:
+#                 return self.has_voxel(neighbor_coord)
+#
+#
+#         def remove_redundant_coords(self, cube):
+#             i = 0
+#             while(i < np.size(cube,1)):
+#                 coord = (cube.T)[i]
+#                 cu = cube[:, cube[0,:] == coord[0]]
+#                 cu = cu[:, cu[1,:] == coord[1]]
+#                 cu = cu[:, cu[2,:] == coord[2]]
+#                 # if more than one coord of same value, delete
+#                 if i >= np.size(cube,1):
+#                     break
+#                 if np.size(cu, 1) >1:
+#                     cube = np.delete(cube, i, 1)
+#                     i = i-1
+#                 i+=1
+#             return cube
+#
+#
+#         def make_face(self, voxel, direction):
+#             voxel_coords = self.xyz[:, voxel]
+#             explicit_dir = CubeData.direction[direction]
+#             vert_order = CubeData.face_triangles[explicit_dir]
+#
+#             # Use if triangle order gets fixed
+#             # next_triangles = np.add(vert_order, voxel)
+#             # next_i = [next_triangles[0], next_triangles[0]]
+#             # next_j = [next_triangles[1], next_triangles[2]]
+#             # next_k = [next_triangles[2], next_triangles[3]]
+#
+#             next_i = [self.vert_count, self.vert_count]
+#             next_j = [self.vert_count+1, self.vert_count+2]
+#             next_k = [self.vert_count+2, self.vert_count+3]
+#
+#             next_tri = np.vstack((next_i, next_j, next_k))
+#             self.triangles = np.hstack((self.triangles, next_tri))
+#             # self.triangles = np.vstack((self.triangles, next_triangles))
+#
+#             face_verts = np.zeros((len(voxel_coords),len(vert_order)))
+#             for i in range(len(vert_order)):
+#                 face_verts[:,i] = voxel_coords + CubeData.cube_verts[vert_order[i]]
+#
+#             self.vert_count = self.vert_count+4
+#             return face_verts
+#
+#
+#         def make_cube_verts(self, voxel):
+#             voxel_coords = self.xyz[:, voxel]
+#             cube = np.zeros((len(voxel_coords), 1))
+#
+#             # only make a new face if there's no neighbor in that direction
+#             dirs_no_neighbor = []
+#             for direction in range(len(CubeData.direction)):
+#                 if np.any(self.get_neighbor(voxel_coords, direction)):
+#                     continue
+#                 else:
+#                     dirs_no_neighbor = np.append(dirs_no_neighbor, direction)
+#                     face = self.make_face(voxel, direction)
+#                     cube = np.append(cube,face, axis=1)
+#
+#             # remove cube initialization
+#             cube = np.delete(cube, 0, 1)
+#
+#             # remove redundant entries: not doing this cuz it messes up the triangle order
+#             # and i'm too lazy to fix that so excess vertices it is
+#             # cube = self.remove_redundant_coords(cube)
+#             return cube
+#
+#
+#         def make_edge_verts(self):
+#             # make only outer vertices
+#             edge_verts = np.zeros((np.size(self.xyz, 0),1))
+#             num_voxels = np.size(self.xyz, 1)
+#             for voxel in range(num_voxels):
+#                 cube = self.make_cube_verts(voxel)          # passing voxel num rather than
+#                 edge_verts = np.append(edge_verts, cube, axis=1)
+#             edge_verts = np.delete(edge_verts, 0,1)
+#             return edge_verts
+#
+#     class CubeData:
+#         # all data and knowledge from https://github.com/boardtobits/procedural-mesh-tutorial/blob/master/CubeMeshData.cs
+#         # for creating faces correctly by direction
+#         face_triangles = {
+#     		'North':  [0, 1, 2, 3 ],        # +y
+#             'East': [ 5, 0, 3, 6 ],         # +x
+#     	    'South': [ 4, 5, 6, 7 ],        # -y
+#             'West': [ 1, 4, 7, 2 ],         # -x
+#             'Up': [ 5, 4, 1, 0 ],           # +z
+#             'Down': [ 3, 2, 7, 6 ]          # -z
+#     	}
+#
+#         cube_verts = [
+#             [1,1,1],
+#             [0,1,1],
+#             [0,1,0],
+#             [1,1,0],
+#             [0,0,1],
+#             [1,0,1],
+#             [1,0,0],
+#             [0,0,0],
+#         ]
+#
+#         # cool twist
+#         # cube_verts = [
+#         #     [0,0,0],
+#         #     [1,0,0],
+#         #     [1,0,1],
+#         #     [0,0,1],
+#         #     [0,1,1],
+#         #     [1,1,1],
+#         #     [1,1,0],
+#         #     [0,1,0],
+#         # ]
+#
+#         # og
+#         # cube_verts = [
+#         #     [1,1,1],
+#         #     [0,1,1],
+#         #     [0,0,1],
+#         #     [1,0,1],
+#         #     [0,1,0],
+#         #     [1,1,0],
+#         #     [1,0,0],
+#         #     [0,0,0]
+#         # ]
+#
+#         direction = [
+#             'North',
+#             'East',
+#             'South',
+#             'West',
+#             'Up',
+#             'Down'
+#         ]
+#
+#         opposing_directions = [
+#             ['North','South'],
+#             ['East','West'],
+#             ['Up', 'Down']
+#         ]
+#
+#         # xyz direction corresponding to 'Direction'
+#         offsets = [
+#             [0, 1, 0],
+#             [1, 0, 0],
+#             [0, -1, 0],
+#             [-1, 0, 0],
+#             [0, 0, 1],
+#             [0, 0, -1],
+#         ]
+#         # offsets = [
+#         #     [0, 0, 1],
+#         #     [1, 0, 0],
+#         #     [0, 0, -1],
+#         #     [-1, 0, 0],
+#         #     [0, 1, 0],
+#         #     [0, -1, 0]
+#         # ]
+#
+#     # ------------
+#     # LOADER DATA
+#
+#     import os
+#     import os.path
+#     import numpy as np
+#     from toy_volume_gen_class import Toy_Volume
+#     from random import randint
+#
+#
+#     EXTENSIONS = ['.npy', '.NPY']
+#
+#     def is_acceptable(filename):
+#         return any(filename.endswith(extension) for extension in EXTENSIONS)
+#
+#     def load_data(opt):
+#         data_paths = []
+#         data = []
+#
+#         # Read in all numpy arrays in curr dir unless 'filename' was specified
+#         if not opt.file_name:         # if no filename given
+#             assert os.path.isdir(opt.dataroot), '%s is not a valid directory' % opt.dataroot
+#
+#             for root, dir, fnames in sorted(os.walk(opt.dataroot)):
+#                 for fname in fnames:
+#                     if is_acceptable(fname):
+#                         data_path = os.path.join(root,fname)
+#                         data_paths.append(data_path)
+#         else:
+#             data_paths = opt.file_name
+#
+#         # Make toy dataset if no files found or opt set
+#         if opt.toy_dataset:
+#             print('Making toy dataset')
+#             d = opt.toy_dataset
+#             # data = np.floor(np.random.rand(d,d,d)*2)
+#             # data = data > 0
+#
+#             n_reps, n_classes = 4, 3
+#             width, height, depth = d,d,d
+#             colour_channels = 3
+#
+#             td = Toy_Volume(n_classes, width, height, depth, colour_channels)
+#
+#             for rep in range(n_reps):
+#                 for colour_idx in range(n_classes):
+#                     #td.set_colour_to_random_xyz(colour_idx)
+#                     x, y, z = td.get_random_xyz()
+#                     rand_x_len = randint(1, int(td.width/4))
+#                     rand_y_len = randint(1, int(td.height/4))
+#                     rand_z_len = randint(1, int(td.depth/4))
+#                     rnd_i = randint(0, 1)
+#                     if rnd_i == 0:
+#                         td.set_rect_cuboid_to_xyz(x, y, z,
+#                                                 rand_x_len, rand_y_len, rand_z_len,
+#                                                 colour_idx)
+#                     elif rnd_i == 1:
+#                         td.set_ellipsoid_to_xyz(x, y, z,
+#                                                 rand_x_len, rand_y_len, rand_z_len,
+#                                                 colour_idx)
+#
+#             data = td.volume
+#             data = data[:,:,:,1]
+#
+#         else:
+#             assert data_paths, 'The directory %s does not contain files with valid extensions %s' % (opt.dataroot, EXTENSIONS)
+#             print("data_paths", data_paths)
+#             data = np.load(data_paths)
+#
+#
+#         return data
+#
+#     ##########################################################################################################
+#     # Joe's toy_volume_gen.py script below so i can use the volume for trial
+#     ##########################################################################################################
+#
+#     import numpy as np
+#     from random import randint
+#
+#
+#     class Toy_Volume:
+#         def __init__(self, n_classes, width, height, depth, colour_channels=3):
+#             self.init_check(n_classes, width, height, depth, colour_channels)
+#             self.n_classes = n_classes
+#             self.width = width
+#             self.height = height
+#             self.depth = depth
+#             self.colour_channels = colour_channels
+#             self.class_colours = Toy_Volume.get_class_colours(n_classes, colour_channels)
+#             self.volume = self.get_empty_array()
+#             self.one_hot_array = self.get_empty_array(channels=self.n_classes)
+#
+#         def init_check(self, n_classes, width, height, depth, colour_channels):
+#             assert type(n_classes) is int, "n_classes must be of type int"
+#             assert n_classes > 0, "Need at least one class"
+#             assert width > 0, "Need postive width"
+#             assert height > 0, "Need positive height"
+#             assert depth > 0, "Need positive depth"
+#             assert (colour_channels == 3) or (colour_channels == 1), "Either RGB or grayscale"
+#
+#         @staticmethod
+#         def get_class_colours(n_classes, colour_channels):
+#             """ Generates random colours to be visualised with and returns the list """
+#             classes = []
+#             for class_idx in range(n_classes):
+#                 count = 0
+#                 valid = False
+#                 while( not valid ):
+#                     colour = Toy_Volume.get_random_colour(colour_channels)
+#                     if colour not in classes:
+#                         classes.append(colour)
+#                         valid = True
+#             return classes
+#
+#         @staticmethod
+#         def get_random_colour(colour_channels):
+#             """ Returns a random colour """
+#             if colour_channels == 1:
+#                 return [randint(0,255)]
+#             return [randint(0,255)/255,randint(0,255)/255,randint(0,255)/255]
+#
+#         def get_empty_array(self, channels=None):
+#             """ Empty starting array """
+#             if channels is None:
+#                 channels = self.colour_channels
+#             return np.zeros([self.width, self.height, self.depth, channels], dtype=float)
+#
+#         def get_random_xyz(self):
+#             x = randint(0, self.width-1)
+#             y = randint(0, self.height-1)
+#             z = randint(0, self.depth-1)
+#             return x, y, z
+#
+#         def set_colour_to_xyz(self, x, y, z, colour_idx):
+#             """ Sets the colour for a specific pixel """
+#             if self.colour_channels == 1:
+#                 self.volume[x][y][z][0] = self.class_colours[colour_idx][0]
+#             else:
+#                 self.volume[x][y][z][0] = self.class_colours[colour_idx][0]
+#                 self.volume[x][y][z][1] = self.class_colours[colour_idx][1]
+#                 self.volume[x][y][z][2] = self.class_colours[colour_idx][2]
+#             self.one_hot_array[x][y][z][:] = 0
+#             self.one_hot_array[x][y][z][colour_idx] = 1
+#
+#         def set_colour_to_random_xyz(self, colour_idx):
+#             self.set_colour_to_xyz(*self.get_random_xyz(), colour_idx)
+#
+#         def get_volume_cube_range(self, x, y, z, length):
+#             assert type(length) is int, "length must be an int, it should be half the width of the object"
+#             (x_min, x_max) = self.get_axis_range(x, length, self.width)
+#             (y_min, y_max) = self.get_axis_range(y, length, self.height)
+#             (z_min, z_max) = self.get_axis_range(z, length, self.depth)
+#             return (x_min, x_max), (y_min, y_max), (z_min, z_max)
+#
+#         def get_axis_range(self, axis_pos, axis_length, frame_length):
+#             inputs = (axis_pos, axis_length)
+#             (axis_min, axis_max) = (self.get_shape_range_min(*inputs), self.get_shape_range_max(*inputs, frame_length))
+#             return (axis_min, axis_max)
+#
+#         def get_shape_range_min(self, axis_pos, length):
+#             assert type(length) is int, "length must be an int"
+#             temp_min = axis_pos - length
+#             range_min = temp_min if temp_min > 0 else 0
+#             return range_min
+#
+#         def get_shape_range_max(self, axis_pos, length, frame_length):
+#             assert type(length) is int, "length must be an int"
+#             temp_max = axis_pos + length
+#             range_max = temp_max if temp_max < (frame_length - 1) else frame_length
+#             return range_max
+#
+#         def set_rect_cuboid_to_xyz(self, x, y, z,
+#                                    x_length, y_length, z_length,
+#                                    colour_idx):
+#             (x_min, x_max) = self.get_axis_range(x, x_length, self.width)
+#             (y_min, y_max) = self.get_axis_range(y, y_length, self.height)
+#             (z_min, z_max) = self.get_axis_range(z, z_length, self.depth)
+#             for x_ in range(x_min, x_max):
+#                 for y_ in range(y_min, y_max):
+#                     for z_ in range(z_min, z_max):
+#                         self.set_colour_to_xyz(x_, y_, z_, colour_idx)
+#
+#         def set_cube_to_xyz(self, x, y, z, length, colour_idx):
+#             self.set_rect_cuboid_to_xyz(x, y, z, length, length, length, colour_idx)
+#
+#         def is_in_sphere(self, x, y, z, centre, radius):
+#             return self.is_in_ellipsoid(x, y, z, centre, radius, radius, radius)
+#
+#         def is_in_ellipsoid(self, x, y, z, centre, x_radius, y_radius, z_radius):
+#             x_centre, y_centre, z_centre = centre
+#             if ((x_centre-x)**2)/x_radius**2 + ((y_centre-y)**2)/y_radius**2 + ((z_centre-z)**2)/z_radius**2 < 1:
+#                 return True
+#             return False
+#
+#         def set_sphere_to_xyz(self, x, y, z, radius, colour_idx):
+#             self.set_ellipsoid_to_xyz(x, y, z, radius, radius, radius, colour_idx)
+#
+#         def set_ellipsoid_to_xyz(self, x, y, z, x_radius, y_radius, z_radius, colour_idx):
+#             (x_min, x_max) = self.get_axis_range(x, x_radius, self.width)
+#             (y_min, y_max) = self.get_axis_range(y, y_radius, self.height)
+#             (z_min, z_max) = self.get_axis_range(z, z_radius, self.depth)
+#             for x_ in range(x_min, x_max):
+#                 for y_ in range(y_min, y_max):
+#                     for z_ in range(z_min, z_max):
+#                         if self.is_in_ellipsoid(x_, y_, z_, (x, y, z), x_radius, y_radius, z_radius):
+#                             self.set_colour_to_xyz(x_, y_, z_, colour_idx)
+#
+#
+#     def get_test_volumes(n_volumes, n_reps, n_classes,
+#                          width, height, depth, colour_channels):
+#         #volumes, one_hots = [], []
+#         volumes, one_hots = None, None
+#
+#         return volumes, one_hots
+#
+#     def plot_volume(volume, show=True):
+#         voxel = volume[:,:,:,0] > 0
+#         import matplotlib.pyplot as plt
+#         from mpl_toolkits.mplot3d import Axes3D
+#         fig = plt.figure()
+#         ax = fig.gca(projection='3d')
+#         ax.voxels(voxel, facecolors=volume, linewidth=0.5)
+#         if show:
+#             plt.show()
+#
+#
+#     def rgb_to_hex(rgb):
+#         assert type(rgb) is list
+#         assert len(rgb) == 3
+#         assert all((0 <= col < 256 and type(col) is int) for col in rgb), "The colours must be an int from 0 to 255"
+#         return '#%02x%02x%02x' % tuple(rgb)
+#
+#     if __name__ == "__main__":
+#         n_reps, n_classes = 4, 3
+#         width, height, depth = 100, 100, 100
+#         colour_channels = 3
+#
+#         td = Toy_Volume(n_classes, width, height, depth, colour_channels)
+#
+#         for rep in range(n_reps):
+#             for colour_idx in range(n_classes):
+#                 #td.set_colour_to_random_xyz(colour_idx)
+#                 x, y, z = td.get_random_xyz()
+#                 rand_x_len = randint(1, int(td.width/4))
+#                 rand_y_len = randint(1, int(td.height/4))
+#                 rand_z_len = randint(1, int(td.depth/4))
+#                 rnd_i = randint(0, 1)
+#                 if rnd_i == 0:
+#                     td.set_rect_cuboid_to_xyz(x, y, z,
+#                                               rand_x_len, rand_y_len, rand_z_len,
+#                                               colour_idx)
+#                 elif rnd_i == 1:
+#                     td.set_ellipsoid_to_xyz(x, y, z,
+#                                             rand_x_len, rand_y_len, rand_z_len,
+#                                             colour_idx)
+#
+#
+#
+#     ##########################################################################################################
+#     # End joe's toy_volume_gen.py (copied as is)
+#     ##########################################################################################################
+#
+#     from options import Options
+#     from data_loader import load_data
+#     from VoxelData import VoxelData
+#     import plotly.graph_objects as go
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+#
+#     if __name__ == "__main__":
+#
+#         opt = Options().parse()
+#         data = load_data(opt)
+#
+#         Voxels = VoxelData(data)
+#         # print("Voxels.data\n",Voxels.data)
+#         # print("Voxels.vertices\n",Voxels.vertices)
+#         # print("Voxels.triangles\n",Voxels.triangles)
+#
+#         print("Generating figure")
+#         fig = go.Figure(data=go.Mesh3d(
+#             x=Voxels.vertices[0],
+#             y=Voxels.vertices[1],
+#             z=Voxels.vertices[2],
+#             i=Voxels.triangles[0],
+#             j=Voxels.triangles[1],
+#             k=Voxels.triangles[2]
+#             ))
+#         fig.show()
+#
 
+
+
+class LoadDataResults():
+
+    def __init__(self, path,**kwargs):
+        # Instance Variable
+        self.pathfile = path
+        self.TypeDataFile = ''
+        # Cargamos la dirección del archivo
+        basename_path = self.__basename(path)
+        self.__loaddata(basename_path)
+
+    def __basename(self, path):
+        basename_path = os.path.basename(path)
+        return basename_path
+
+    def __loadfile(self):
+        file = open(self.pathfile)
+        string_list = file.readlines()
+        file.close()
+        return string_list
+
+    def __loaddata(self, basename):
+        # Cargamos los datos del archivo
+        string_list = self.__loadfile()
+
+        # SPC Files
+
+        if basename.startswith('spc-enddet-'):
+            self.GetData = self.__LoadData_SPC_EndDet(string_list)
+            self.TypeDataFile = 'spc-enddet'
+            self.Body = basename.split('-')[-1].split('.')[0]
+
+        if basename.startswith('spc-impdet-'):
+            self.GetData = self.__LoadData_SPC_ImpDet(string_list)
+            self.TypeDataFile = 'spc-impdet'
+            self.Body = basename.split('-')[-1].split('.')[0]
+
+        if basename.startswith('psf-impdet'):
+            self.GetData = self.__LoadData_PSF_ImpDet(string_list)
+            self.TypeDataFile = 'psf-impdet'
+            self.Body = basename.split('-')[-1].split('.')[0]
+
+        if basename.startswith('fln-impdet'):
+            self.GetData = self.__LoadData_FLN_ImpDet(string_list)
+            self.TypeDataFile = 'fln-impdet'
+            self.Body = basename.split('-')[-1].split('.')[0]
+
+
+    class __LoadData_SPC_EndDet():
+
+        def __init__(self, string_list,**kwargs):
+            # Instance Variable
+            self.__data_process(string_list)
+
+        def __data_process(self, string_list):
+
+                # ----------------------------------------------------------------------
+                # (1) Separamos el encabezado de los datos.
+                encabezado = [f for f in string_list if f.startswith(' #')]
+                data = [f[1:].lstrip(' ') for f in string_list if not f.startswith(' #')]
+
+                # ----------------------------------------------------------------------
+                # (2) Separamos el encabezado en: titulos y nombre de columnas.
+
+                header = [f for f in encabezado if not (f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  PDFs') or f.startswith(' #  columns') or f.startswith(' #  PLANE') or f.startswith(' #/') or f.startswith(' #-') or f.startswith(' #\n'))]
+
+                columns = [f for f in encabezado if f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  columns') or f.startswith(' #/')]
+
+                # ------------------------------------------------------------------
+                # (3) Separamos la información que brinda el encabezado.
+
+                # --- Titulo
+                row_1 = header[0].rstrip("\n").rstrip('.').lstrip(" #  ").split('.')
+                if len(row_1) != 1:
+                    self.GetMain = row_1[0].split(' ')[-1]
+                    self.GetTitle = row_1[1].lstrip(' ')
+                else:
+                    self.GetTitle = header[1].rstrip("\n").rstrip('.').lstrip(" #  ")
+
+
+                # ----------------------------------------------------------------------
+                # (4) Separamos los titulos de las columnas, los datos y las unidades.
+
+                # Obtenemos los titulos de las columnas.
+                if len(columns) == 1:
+                    titles_columns = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',columns[0])
+                    titles_columns = [f.lstrip('#/') for f in titles_columns if f!='']
+                    units = [[' '][0] for f in titles_columns]
+                else:
+
+                    units = []
+                    titles_columns = []
+
+                    for title in columns:
+
+                        # --- Limpiamos el string.
+                        # Quitamos "\n", ".", "#".
+                        title = title.rstrip("\n").rstrip(".")
+                        title = title.lstrip('#  ')
+                        title = title.lstrip(' ').rstrip(' ')
+
+                        title_1, title_2 = title.split(':')
+
+                        title_1 = title_1.rstrip("\n").rstrip(".")
+                        title_1 = title_1.lstrip('#  ')
+                        title_1 = title_1.lstrip(' ').rstrip(' ')
+
+                        title_2 = title_2.rstrip("\n").rstrip(".")
+                        title_2 = title_2.lstrip('#  ')
+                        title_2 = title_2.lstrip(' ').rstrip(' ')
+
+                        if title_1.find('to') != -1:
+                            num_columns = [int(s) for s in title_1.split() if s.isdigit()]
+                            list_numcol = np.arange(np.min(num_columns),np.max(num_columns),1)
+                            if title_2.find('X,Y,Z') != -1:
+                                titles_columns.append('X')
+                                units.append('cm')
+                                titles_columns.append('Y')
+                                units.append('cm')
+                                titles_columns.append('Z')
+                                units.append('cm')
+                            if title_2.find('IX,IY,IZ') != -1:
+                                titles_columns.append('IX')
+                                units.append(' ')
+                                titles_columns.append('IY')
+                                units.append(' ')
+                                titles_columns.append('IZ')
+                                units.append(' ')
+                        else:
+
+                            # --- Limpiamos el string.
+                            # Quitamos los espacios, "\n" y "." finales
+                            title_2 = title_2.rstrip("\n").rstrip(".")
+                            title_2 = title_2.lstrip(' ').rstrip(' ')
+                            # Quitamos las comas.
+                            if title_2.find(',') != -1:
+                                title_2 = title_2.replace(',','')
+
+                            # --- Guardamos y quitamos las unidades.
+
+                            # Si el string tiene unidades entre parentesis
+                            if title_2.find('(') != -1:
+                                # Guardamos la unidad en la lista unites
+                                unit = title_2.split('(', 1)[1].split(')')[0]
+                                # Quitamos la unidad del string
+                                title_2 = title_2.split('(', 1)[0].rstrip(' ').lstrip(' ')
+                            else:
+                                other_unite = [f for f in encabezado if f.startswith(' #  PDFs')]
+                                if other_unite != []:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  PDFs')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+                                else:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  Fluences')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+
+
+                            # --- Guardamos el tipo de particula.
+                            # Si el string tiene el for
+                            if title_2.find('for') != -1:
+                                # Guardamos el tipo de particula
+                                particles = title_2.split('for')[1]
+                                particles = particles.rstrip(' ').lstrip(' ')
+                                # Quitamos el tipo de particula del string
+                                title_2 = title_2.split('for')[0]
+                            else:
+                                particles = ''
+
+                            if title_2.find('and') != -1:
+                                title_2 = title_2.lstrip(' ').rstrip(' ')
+                                other_titles = title_2.split(' and ')
+                                for string in other_titles:
+                                    if len(string.split(' ')) !=1:
+                                        strings = string
+                                        particles = string.split(' ')[0]
+                                    elif particles == '':
+                                        strings = particles+' '+string
+                                    else:
+                                        strings = particles+' '+string
+                                    titles_columns.append(strings.lstrip(' ').rstrip(' '))
+                                    units.append(unit)
+                            else:
+                                titles_columns.append(title_2)
+                                units.append(unit)
+
+                # Reemplazamos espacios por guiones bajos.
+                titles_columns = [f.replace(' ','_') for f in titles_columns]
+
+                self.GetTitlesColumns = titles_columns
+                self.GetUnits = units
+
+                #-------------------------------------------------------------------
+                # (5) Obtenemos los datos de cada columna
+                data_dict = {k:[] for k in titles_columns}
+
+                for i,x in enumerate(data):
+                    x = x.rstrip("\n")
+                    if len(x)>4:
+                        x = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',x)
+                        for j, title in enumerate(titles_columns):
+                            data_dict[title].append(float(x[j]))
+
+                self.GetDataColumns = data_dict
+
+    class __LoadData_SPC_ImpDet():
+
+        def __init__(self, string_list,**kwargs):
+            # Instance Variable
+            self.__data_process(string_list)
+
+        def __data_process(self, string_list):
+
+                # ----------------------------------------------------------------------
+                # (1) Separamos el encabezado de los datos.
+                encabezado = [f for f in string_list if f.startswith(' #')]
+                data = [f[1:].lstrip(' ') for f in string_list if not f.startswith(' #')]
+
+                # ----------------------------------------------------------------------
+                # (2) Separamos el encabezado en: titulos y nombre de columnas.
+
+                header = [f for f in encabezado if not (f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  PDFs') or f.startswith(' #  columns') or f.startswith(' #  PLANE') or f.startswith(' #/') or f.startswith(' #-') or f.startswith(' #\n'))]
+
+                columns = [f for f in encabezado if f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  columns') or f.startswith(' #/')]
+
+                # ------------------------------------------------------------------
+                # (3) Separamos la información que brinda el encabezado.
+
+                # --- Titulo
+                titles_list = header[0].rstrip("\n").rstrip('.').lstrip(" #  ").split('.')
+                if len(titles_list) != 1:
+                    self.GetTitle = titles_list[1].lstrip(' ')
+                else:
+                    self.GetTitle = header[1].rstrip("\n").rstrip('.').lstrip(" #  ")
+
+                # ----------------------------------------------------------------------
+                # (4) Separamos los titulos de las columnas, los datos y las unidades.
+
+                # Obtenemos los titulos de las columnas.
+                if len(columns) == 1:
+                    titles_columns = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',columns[0])
+                    titles_columns = [f.lstrip('#/') for f in titles_columns if f!='']
+                    units = [[' '][0] for f in titles_columns]
+                else:
+
+                    units = []
+                    titles_columns = []
+
+                    for title in columns:
+
+                        # --- Limpiamos el string.
+                        # Quitamos "\n", ".", "#".
+                        title = title.rstrip("\n").rstrip(".")
+                        title = title.lstrip('#  ')
+                        title = title.lstrip(' ').rstrip(' ')
+
+                        title_1, title_2 = title.split(':')
+
+                        title_1 = title_1.rstrip("\n").rstrip(".")
+                        title_1 = title_1.lstrip('#  ')
+                        title_1 = title_1.lstrip(' ').rstrip(' ')
+
+                        title_2 = title_2.rstrip("\n").rstrip(".")
+                        title_2 = title_2.lstrip('#  ')
+                        title_2 = title_2.lstrip(' ').rstrip(' ')
+
+                        if title_1.find('to') != -1:
+                            num_columns = [int(s) for s in title_1.split() if s.isdigit()]
+                            list_numcol = np.arange(np.min(num_columns),np.max(num_columns),1)
+                            if title_2.find('X,Y,Z') != -1:
+                                titles_columns.append('X')
+                                units.append('cm')
+                                titles_columns.append('Y')
+                                units.append('cm')
+                                titles_columns.append('Z')
+                                units.append('cm')
+                            if title_2.find('IX,IY,IZ') != -1:
+                                titles_columns.append('IX')
+                                units.append(' ')
+                                titles_columns.append('IY')
+                                units.append(' ')
+                                titles_columns.append('IZ')
+                                units.append(' ')
+                        else:
+
+                            # --- Limpiamos el string.
+                            # Quitamos los espacios, "\n" y "." finales
+                            title_2 = title_2.rstrip("\n").rstrip(".")
+                            title_2 = title_2.lstrip(' ').rstrip(' ')
+                            # Quitamos las comas.
+                            if title_2.find(',') != -1:
+                                title_2 = title_2.replace(',','')
+
+                            # --- Guardamos y quitamos las unidades.
+
+                            # Si el string tiene unidades entre parentesis
+                            if title_2.find('(') != -1:
+                                # Guardamos la unidad en la lista unites
+                                unit = title_2.split('(', 1)[1].split(')')[0]
+                                # Quitamos la unidad del string
+                                title_2 = title_2.split('(', 1)[0].rstrip(' ').lstrip(' ')
+                            else:
+                                other_unite = [f for f in encabezado if f.startswith(' #  PDFs')]
+                                if other_unite != []:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  PDFs')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+                                else:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  Fluences')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+
+
+                            # --- Guardamos el tipo de particula.
+                            # Si el string tiene el for
+                            if title_2.find('for') != -1:
+                                # Guardamos el tipo de particula
+                                particles = title_2.split('for')[1]
+                                particles = particles.rstrip(' ').lstrip(' ')
+                                # Quitamos el tipo de particula del string
+                                title_2 = title_2.split('for')[0]
+                            else:
+                                particles = ''
+
+                            if title_2.find('and') != -1:
+                                title_2 = title_2.lstrip(' ').rstrip(' ')
+                                other_titles = title_2.split(' and ')
+                                for string in other_titles:
+                                    if len(string.split(' ')) !=1:
+                                        strings = string
+                                        particles = string.split(' ')[0]
+                                    elif particles == '':
+                                        strings = particles+' '+string
+                                    else:
+                                        strings = particles+' '+string
+                                    titles_columns.append(strings.lstrip(' ').rstrip(' '))
+                                    units.append(unit)
+                            else:
+                                titles_columns.append(title_2)
+                                units.append(unit)
+
+                # Reemplazamos espacios por guiones bajos.
+                titles_columns = [f.replace(' ','_') for f in titles_columns]
+
+                self.GetTitlesColumns = titles_columns
+                self.GetUnits = units
+
+                #-------------------------------------------------------------------
+                # (5) Obtenemos los datos de cada columna
+                data_dict = {k:[] for k in titles_columns}
+
+                for i,x in enumerate(data):
+                    x = x.rstrip("\n")
+                    if len(x)>4:
+                        x = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',x)
+                        for j, title in enumerate(titles_columns):
+                            data_dict[title].append(float(x[j]))
+
+                self.GetDataColumns = data_dict
+
+    class __LoadData_PSF_ImpDet():
+
+        def __init__(self, string_list,**kwargs):
+            # Instance Variable
+            self.__data_process(string_list)
+
+        def __data_process(self, string_list):
+
+                # ----------------------------------------------------------------------
+                # (1) Separamos el encabezado de los datos.
+                encabezado = [f for f in string_list if f.startswith(' #')]
+                data = [f[1:].lstrip(' ') for f in string_list if not f.startswith(' #')]
+
+                # ----------------------------------------------------------------------
+                # (2) Separamos el encabezado en: titulos y nombre de columnas.
+
+                header = [f for f in encabezado if not (f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  PDFs') or f.startswith(' #  columns') or f.startswith(' #  PLANE') or f.startswith(' #/') or f.startswith(' #-') or f.startswith(' #\n'))]
+
+                columns = [f for f in encabezado if f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  columns') or f.startswith(' #/')]
+
+                # ------------------------------------------------------------------
+                # (3) Separamos la información que brinda el encabezado.
+
+                # --- Titulo
+                titles_list = header[0].rstrip("\n").rstrip('.').lstrip(" #  ").split('.')
+                if len(titles_list) != 1:
+                    self.GetPen = titles_list[0].split(' ')[-1]
+                    self.GetTitle = titles_list[1].lstrip(' ')
+                else:
+                    self.GetTitle = header[1].rstrip("\n").rstrip('.').lstrip(" #  ")
+
+                # ----------------------------------------------------------------------
+                # (4) Separamos los titulos de las columnas, los datos y las unidades.
+
+                # Obtenemos los titulos de las columnas.
+                if len(columns) == 1:
+                    titles_columns = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',columns[0])
+                    titles_columns = [f.lstrip('#/') for f in titles_columns if f!='']
+                    units = [[' '][0] for f in titles_columns]
+                else:
+
+                    units = []
+                    titles_columns = []
+
+                    for title in columns:
+
+                        # --- Limpiamos el string.
+                        # Quitamos "\n", ".", "#".
+                        title = title.rstrip("\n").rstrip(".")
+                        title = title.lstrip('#  ')
+                        title = title.lstrip(' ').rstrip(' ')
+
+                        title_1, title_2 = title.split(':')
+
+                        title_1 = title_1.rstrip("\n").rstrip(".")
+                        title_1 = title_1.lstrip('#  ')
+                        title_1 = title_1.lstrip(' ').rstrip(' ')
+
+                        title_2 = title_2.rstrip("\n").rstrip(".")
+                        title_2 = title_2.lstrip('#  ')
+                        title_2 = title_2.lstrip(' ').rstrip(' ')
+
+                        if title_1.find('to') != -1:
+                            num_columns = [int(s) for s in title_1.split() if s.isdigit()]
+                            list_numcol = np.arange(np.min(num_columns),np.max(num_columns),1)
+                            if title_2.find('X,Y,Z') != -1:
+                                titles_columns.append('X')
+                                units.append('cm')
+                                titles_columns.append('Y')
+                                units.append('cm')
+                                titles_columns.append('Z')
+                                units.append('cm')
+                            if title_2.find('IX,IY,IZ') != -1:
+                                titles_columns.append('IX')
+                                units.append(' ')
+                                titles_columns.append('IY')
+                                units.append(' ')
+                                titles_columns.append('IZ')
+                                units.append(' ')
+                        else:
+
+                            # --- Limpiamos el string.
+                            # Quitamos los espacios, "\n" y "." finales
+                            title_2 = title_2.rstrip("\n").rstrip(".")
+                            title_2 = title_2.lstrip(' ').rstrip(' ')
+                            # Quitamos las comas.
+                            if title_2.find(',') != -1:
+                                title_2 = title_2.replace(',','')
+
+                            # --- Guardamos y quitamos las unidades.
+
+                            # Si el string tiene unidades entre parentesis
+                            if title_2.find('(') != -1:
+                                # Guardamos la unidad en la lista unites
+                                unit = title_2.split('(', 1)[1].split(')')[0]
+                                # Quitamos la unidad del string
+                                title_2 = title_2.split('(', 1)[0].rstrip(' ').lstrip(' ')
+                            else:
+                                other_unite = [f for f in encabezado if f.startswith(' #  PDFs')]
+                                if other_unite != []:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  PDFs')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+                                else:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  Fluences')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+
+
+                            # --- Guardamos el tipo de particula.
+                            # Si el string tiene el for
+                            if title_2.find('for') != -1:
+                                # Guardamos el tipo de particula
+                                particles = title_2.split('for')[1]
+                                particles = particles.rstrip(' ').lstrip(' ')
+                                # Quitamos el tipo de particula del string
+                                title_2 = title_2.split('for')[0]
+                            else:
+                                particles = ''
+
+                            if title_2.find('and') != -1:
+                                title_2 = title_2.lstrip(' ').rstrip(' ')
+                                other_titles = title_2.split(' and ')
+                                for string in other_titles:
+                                    if len(string.split(' ')) !=1:
+                                        strings = string
+                                        particles = string.split(' ')[0]
+                                    elif particles == '':
+                                        strings = particles+' '+string
+                                    else:
+                                        strings = particles+' '+string
+                                    titles_columns.append(strings.lstrip(' ').rstrip(' '))
+                                    units.append(unit)
+                            else:
+                                titles_columns.append(title_2)
+                                units.append(unit)
+
+                # Reemplazamos espacios por guiones bajos.
+                titles_columns = [f.replace(' ','_') for f in titles_columns]
+
+                self.GetTitlesColumns = titles_columns
+                self.GetUnits = units
+
+                #-------------------------------------------------------------------
+                # (5) Obtenemos los datos de cada columna
+                data_dict = {k:[] for k in titles_columns}
+
+                for i,x in enumerate(data):
+                    x = x.rstrip("\n")
+                    if len(x)>4:
+                        x = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',x)
+                        for j, title in enumerate(titles_columns):
+                            data_dict[title].append(float(x[j]))
+
+                self.GetDataColumns = data_dict
+
+    class __LoadData_FLN_ImpDet():
+
+        def __init__(self, string_list,**kwargs):
+            # Instance Variable
+            self.__data_process(string_list)
+
+        def __data_process(self, string_list):
+
+                # ----------------------------------------------------------------------
+                # (1) Separamos el encabezado de los datos.
+                encabezado = [f for f in string_list if f.startswith(' #')]
+                data = [f[1:].lstrip(' ') for f in string_list if not f.startswith(' #')]
+
+                # ----------------------------------------------------------------------
+                # (2) Separamos el encabezado en: titulos y nombre de columnas.
+
+                header = [f for f in encabezado if not (f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  PDFs') or f.startswith(' #  columns') or f.startswith(' #  PLANE') or f.startswith(' #/') or f.startswith(' #-') or f.startswith(' #\n'))]
+
+                columns = [f for f in encabezado if f.startswith(' #  1st') or f.startswith(' #  2nd') or f.startswith(' #  3rd') or f.startswith(' #  4th') or f.startswith(' #  5th') or f.startswith(' #  6th') or f.startswith(' #  7th') or f.startswith(' #  8th') or f.startswith(' #  columns') or f.startswith(' #/')]
+
+                # ------------------------------------------------------------------
+                # (3) Separamos la información que brinda el encabezado.
+
+                # --- Titulo
+                titles_list = header[0].rstrip("\n").rstrip('.').lstrip(" #  ").split('.')
+                if len(titles_list) != 1:
+                    self.GetTitle = titles_list[1].lstrip(' ')
+                else:
+                    self.GetTitle = header[1].rstrip("\n").rstrip('.').lstrip(" #  ")
+
+                # ----------------------------------------------------------------------
+                # (4) Separamos los titulos de las columnas, los datos y las unidades.
+
+                # Obtenemos los titulos de las columnas.
+                if len(columns) == 1:
+                    titles_columns = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',columns[0])
+                    titles_columns = [f.lstrip('#/') for f in titles_columns if f!='']
+                    units = [[' '][0] for f in titles_columns]
+                else:
+
+                    units = []
+                    titles_columns = []
+
+                    for title in columns:
+
+                        # --- Limpiamos el string.
+                        # Quitamos "\n", ".", "#".
+                        title = title.rstrip("\n").rstrip(".")
+                        title = title.lstrip('#  ')
+                        title = title.lstrip(' ').rstrip(' ')
+
+                        title_1, title_2 = title.split(':')
+
+                        title_1 = title_1.rstrip("\n").rstrip(".")
+                        title_1 = title_1.lstrip('#  ')
+                        title_1 = title_1.lstrip(' ').rstrip(' ')
+
+                        title_2 = title_2.rstrip("\n").rstrip(".")
+                        title_2 = title_2.lstrip('#  ')
+                        title_2 = title_2.lstrip(' ').rstrip(' ')
+
+                        if title_1.find('to') != -1:
+                            num_columns = [int(s) for s in title_1.split() if s.isdigit()]
+                            list_numcol = np.arange(np.min(num_columns),np.max(num_columns),1)
+                            if title_2.find('X,Y,Z') != -1:
+                                titles_columns.append('X')
+                                units.append('cm')
+                                titles_columns.append('Y')
+                                units.append('cm')
+                                titles_columns.append('Z')
+                                units.append('cm')
+                            if title_2.find('IX,IY,IZ') != -1:
+                                titles_columns.append('IX')
+                                units.append(' ')
+                                titles_columns.append('IY')
+                                units.append(' ')
+                                titles_columns.append('IZ')
+                                units.append(' ')
+                        else:
+
+                            # --- Limpiamos el string.
+                            # Quitamos los espacios, "\n" y "." finales
+                            title_2 = title_2.rstrip("\n").rstrip(".")
+                            title_2 = title_2.lstrip(' ').rstrip(' ')
+                            # Quitamos las comas.
+                            if title_2.find(',') != -1:
+                                title_2 = title_2.replace(',','')
+
+                            # --- Guardamos y quitamos las unidades.
+
+                            # Si el string tiene unidades entre parentesis
+                            if title_2.find('(') != -1:
+                                # Guardamos la unidad en la lista unites
+                                unit = title_2.split('(', 1)[1].split(')')[0]
+                                # Quitamos la unidad del string
+                                title_2 = title_2.split('(', 1)[0].rstrip(' ').lstrip(' ')
+                            else:
+                                other_unite = [f for f in encabezado if f.startswith(' #  PDFs')]
+                                if other_unite != []:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  PDFs')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+                                else:
+                                    other_unite = [f for f in encabezado if f.startswith(' #  Fluences')][0]
+                                    other_unite = other_unite.rstrip("\n").rstrip(".")
+                                    other_unite = other_unite.lstrip(' ').rstrip(' ')
+                                    unit = other_unite.split(' ')[-1]
+
+
+                            # --- Guardamos el tipo de particula.
+                            # Si el string tiene el for
+                            if title_2.find('for') != -1:
+                                # Guardamos el tipo de particula
+                                particles = title_2.split('for')[1]
+                                particles = particles.rstrip(' ').lstrip(' ')
+                                # Quitamos el tipo de particula del string
+                                title_2 = title_2.split('for')[0]
+                            else:
+                                particles = ''
+
+                            if title_2.find('and') != -1:
+                                title_2 = title_2.lstrip(' ').rstrip(' ')
+                                other_titles = title_2.split(' and ')
+                                for string in other_titles:
+                                    if len(string.split(' ')) !=1:
+                                        strings = string
+                                        particles = string.split(' ')[0]
+                                    elif particles == '':
+                                        strings = particles+' '+string
+                                    else:
+                                        strings = particles+' '+string
+                                    titles_columns.append(strings.lstrip(' ').rstrip(' '))
+                                    units.append(unit)
+                            else:
+                                titles_columns.append(title_2)
+                                units.append(unit)
+
+                # Reemplazamos espacios por guiones bajos.
+                titles_columns = [f.replace(' ','_') for f in titles_columns]
+
+                self.GetTitlesColumns = titles_columns
+                self.GetUnits = units
+
+                #-------------------------------------------------------------------
+                # (5) Obtenemos los datos de cada columna
+                data_dict = {k:[] for k in titles_columns}
+
+                for i,x in enumerate(data):
+                    x = x.rstrip("\n")
+                    if len(x)>4:
+                        x = re.split(r'\s+(?=[^"]*(?:"[^"]*"[^"]*)*$)',x)
+                        for j, title in enumerate(titles_columns):
+                            data_dict[title].append(float(x[j]))
+
+                self.GetDataColumns = data_dict
 
 class LoadDataFileInput():
 
@@ -764,7 +1860,7 @@ class LoadDataFileInput():
             if string_list[block[0]].startswith('       >>>>>>>> Impact detectors'):
                 new_string_list = string_list[:block[0]+1]
                 for j in range(1,ndetectors+1):
-                    new_string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'0','0'))
+                    new_string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'1','2'))
                     new_string_list.append('IDBODY {}\n'.format(j))
                 new_string_list.append('       .\n')
 
@@ -2618,7 +3714,8 @@ def style_names(list_name):
         style_list = ['XY', 'XZ', 'YZ']
     if list_name == 'materials':
         style_list = ['CdTe', 'Ge', 'Si']
-
+    if list_name == 'type_plot':
+        style_list = ['Espectro antes del detector', 'Espectro despues del detector', 'Espacio de fase', 'Fluencia antes del detector']
     result = []
     for style in style_list:
         if style.lower() == style_list:
@@ -2630,16 +3727,309 @@ def style_names(list_name):
 class plotsTools(QWidget):
 
     def __init__(self):
-        super(SimulatePENELOPE, self).__init__()
+        super(plotsTools, self).__init__()
 
+        # Seleccionamos la carpeta con los resultados.
+        pathfolder = self.load_file()
+
+        # Cargamos en una lista todos los path de datos.
+        list_pathfiles = [os.path.join(pathfolder,pathfile) for pathfile in os.listdir(pathfolder) if os.path.isfile(os.path.join(pathfolder,pathfile)) and pathfile.endswith('.dat')]
+
+        # Cargamos todos los resultados y los separamos en base datos.
+        spc_enddet = {}
+        spc_impdet = {}
+        psf_impdet = {}
+        fln_impdet = {}
+
+        for pathfile in list_pathfiles:
+
+            data = LoadDataResults(pathfile)
+
+            if data.TypeDataFile == 'spc-enddet':
+                spc_enddet.update({data.Body:data.GetData})
+
+            if data.TypeDataFile == 'spc-impdet':
+                spc_impdet.update({data.Body:data.GetData})
+
+            if data.TypeDataFile == 'psf-impdet':
+                psf_impdet.update({data.Body:data.GetData})
+
+            if data.TypeDataFile == 'fln-impdet':
+                fln_impdet.update({data.Body:data.GetData})
+
+        self.database = {'spc-enddet':spc_enddet, 'spc-impdet':spc_impdet, 'psf-impdet':psf_impdet, 'fln-impdet':fln_impdet}
+
+        # Definimos el número de detectores
+        self.num_bodys = len(list(self.database['spc-enddet'].keys()))
+
+        # self.__detectores_opuestos()
+        # Iniciamos la pantalla
         self.__Layaout_Principal()
 
-        layout_Simulate = QHBoxLayout()
-        layout_Simulate.addLayout(self.llayout, 25)
-        layout_Simulate.addLayout(self.clayout, 25)
-        layout_Simulate.addLayout(self.rlayout, 50)
-        self.setLayout(layout_Simulate)
+        layout_plots = QHBoxLayout()
+        layout_plots.addLayout(self.llayout, 25)
+        layout_plots.addLayout(self.rlayout, 75)
+        self.setLayout(layout_plots)
 
+    def load_file(self):
+
+        # Creamos la ventana emergente para que se pueda seleccionar el archivo.
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfolder = QFileDialog.getExistingDirectory(self, "Select Directory")
+
+        return pathfolder
+
+    def save_file(self):
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        archivo, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "",
+                                                  "Archivos de texto (*.txt);;Todos los archivos (*)",
+                                                  options=opciones)
+        if archivo:
+            print(f'Se guardará el archivo en: {archivo}')
+
+    def __Layaout_Principal(self):
+
+        # --------------------------------------------------
+        # # Panel IZQUIERDO - Configuraciones
+
+        # Tipo de datos para visualizar
+        self._type_plot = QComboBox()
+        init_widget(self._type_plot, "styleComboBox")
+        self._type_plot.addItems(style_names(list_name='type_plot'))
+
+        # Detector para visualizar
+        self._nbody = QDoubleSpinBox()
+        self._nbody.setPrefix("Detector: ")
+        self._nbody.setValue(1)
+        self._nbody.setRange(1, self.num_bodys)
+        init_widget(self._nbody, "xdim")
+
+        # Boton de ejecución para visualizar el plot elegido
+        self.button_view = QPushButton("Ver")
+        init_widget(self.button_view, "view_label")
+
+
+        # # Agregamos el layout
+        self.llayout = QVBoxLayout()
+        self.llayout.setContentsMargins(1, 1, 1, 1)
+
+        self.label1 = QLabel("PLOTS DE DATOS")
+        self.label1.setStyleSheet("border: 2px solid gray; position: center;")
+        self.llayout.addWidget(self.label1)
+
+        self.llayout.addWidget(QLabel("Datos para visualizar:"))
+        self.llayout.addWidget(self._type_plot)
+
+
+
+        self.llayout.addWidget(QLabel("Detector:"))
+        self.llayout.addWidget(self._nbody)
+
+        self.llayout.addWidget(self.button_view)
+
+        self.llayout.addStretch()
+
+        # # Agregamos las Conexiones
+        self.button_view.clicked.connect(self.__ViewPlot)
+
+        # --------------------------------------------------
+        # # Panel DERECHO - PLOTS
+
+        self.rlayout = QVBoxLayout()
+        self.rlayout.setContentsMargins(1, 1, 1, 1)
+        self.fig = Figure(figsize=(2, 2))
+        self.can = FigureCanvasQTAgg(self.fig)
+        self.rlayout.addWidget(self.can)
+
+    def __sourcePut(self, state):
+
+        if state == Qt.Checked:
+            self._xs.setVisible(True)
+            self._ys.setVisible(True)
+            self._zs.setVisible(True)
+            self._activeSource = True
+        else:
+            self._xs.setVisible(False)
+            self._ys.setVisible(False)
+            self._zs.setVisible(False)
+            self._activeSource = False
+
+    def __func(self,label):
+        index = self.__labels.index(label)
+        self.__plots[index].set_visible(not self.__plots[index].get_visible())
+        self.can.draw()
+
+    def __ViewPlot(self):
+
+        # (1) Extraemos los datos
+        ibody = str(self._nbody.value()).split('.')[0]
+        if len(ibody) < 2:
+            ibody = '0'+ibody
+        type_plot = str(self._type_plot.currentText())
+
+        if type_plot == 'Espectro antes del detector':
+
+            # (1) --- SEPARAMOS LOS DATOS
+            # Separamos los datos
+            column = self.database['spc-impdet'][ibody].GetTitlesColumns
+            data = self.database['spc-impdet'][ibody].GetDataColumns
+            units = self.database['spc-impdet'][ibody].GetUnits
+            title = self.database['spc-impdet'][ibody].GetTitle
+
+            energy = data[column[0]]
+            den_prob = data[column[1]]
+            su_den_prob = data[column[2]]
+            dp_electron = data[column[3]]
+            su_dp_electron = data[column[4]]
+            dp_fotones = data[column[5]]
+            su_dp_fotones = data[column[6]]
+            dp_positrons = data[column[7]]
+            su_dp_positrons = data[column[8]]
+
+            # (2) --- PLOTEAMOS
+            # Eliminamos la figura anterior
+            self.can.deleteLater()
+            # Creamos una nueva figura
+            self.fig = Figure(figsize=(2, 2))
+            self.can = FigureCanvasQTAgg(self.fig)
+            self.rlayout.addWidget(self.can)
+
+            self.__labels = [column[1],column[3],column[5], column[7]]
+            print(column)
+            # here you can set up your figure/axis
+            self.ax = self.can.figure.add_subplot(111)
+            matplotlib.rcParams.update({'font.size': 8})
+
+            plot1, = self.ax.plot(energy, den_prob, 'b-', label=self.__labels[0])
+            plot2, = self.ax.plot(energy, dp_electron, 'r-', label=self.__labels[1])
+            plot3, = self.ax.plot(energy, dp_fotones, 'g-', label=self.__labels[2])
+            plot4, = self.ax.plot(energy, dp_positrons, 'y-', label=self.__labels[3])
+
+            self.__plots = [plot1, plot2, plot3, plot4]
+
+            self.ax.legend(loc="upper left", fontsize=10)
+            self.ax.set_xlabel('{}'.format(units[0]))
+            self.ax.set_ylabel('{}'.format(units[1]))
+            self.ax.set_title('{}'.format(title))
+
+            visibility = [line.get_visible() for line in self.__plots]
+            axcolor = 'lightgoldenrodyellow'
+            rax = self.can.figure.add_axes([0.8, 0.7, 0.15, 0.15], facecolor=axcolor)
+
+            self.__check = CheckButtons(rax, self.__labels, visibility)
+            self.__check.on_clicked(self.__func)
+
+            self.can.draw()
+
+        if type_plot == 'Espectro despues del detector':
+
+            self.can.deleteLater()
+
+            self.fig = Figure(figsize=(2, 2))
+            self.can = FigureCanvasQTAgg(self.fig)
+            self.rlayout.addWidget(self.can)
+
+            # here you can set up your figure/axis
+            self.ax = self.can.figure.add_subplot(111)
+            matplotlib.rcParams.update({'font.size': 8})
+            print(ibody)
+            print(self.database['spc-impdet'])
+            # Separamos los datos
+            column = self.database['spc-enddet'][ibody].GetTitlesColumns
+            data = self.database['spc-enddet'][ibody].GetDataColumns
+            units = self.database['spc-enddet'][ibody].GetUnits
+            title = self.database['spc-enddet'][ibody].GetTitle
+
+            # Ploteamos los resultados
+            self.ax.plot(data[column[0]], data[column[1]])
+
+            self.ax.legend(loc="upper left", fontsize=10)
+            self.ax.set_xlabel('{}'.format(units[0]))
+            self.ax.set_ylabel('{}'.format(units[1]))
+            self.ax.set_title('{}'.format(title))
+
+            self.can.draw()
+
+        if type_plot == 'Fluencia del espacio de fase':
+
+            self.can.deleteLater()
+
+            self.fig = Figure(figsize=(2, 2))
+            self.can = FigureCanvasQTAgg(self.fig)
+            self.rlayout.addWidget(self.can)
+
+            # here you can set up your figure/axis
+            self.ax = self.can.figure.add_subplot(111)
+            matplotlib.rcParams.update({'font.size': 8})
+            print(ibody)
+            print(self.database['psf-impdet'])
+            # Separamos los datos
+            column = self.database['psf-impdet'][ibody].GetTitlesColumns
+            data = self.database['psf-impdet'][ibody].GetDataColumns
+            units = self.database['psf-impdet'][ibody].GetUnits
+            title = self.database['psf-impdet'][ibody].GetTitle
+
+            # Ploteamos los resultados
+            self.ax.plot(data[column[0]], data[column[1]])
+
+            self.ax.legend(loc="upper left", fontsize=10)
+            self.ax.set_xlabel('{}'.format(units[0]))
+            self.ax.set_ylabel('{}'.format(units[1]))
+            self.ax.set_title('{}'.format(title))
+
+            self.can.draw()
+
+        if type_plot == 'Fluencia antes del detector':
+
+            self.can.deleteLater()
+
+            self.fig = Figure(figsize=(2, 2))
+            self.can = FigureCanvasQTAgg(self.fig)
+            self.rlayout.addWidget(self.can)
+
+            # here you can set up your figure/axis
+            self.ax = self.can.figure.add_subplot(111)
+            matplotlib.rcParams.update({'font.size': 8})
+            print(ibody)
+            print(self.database['fln-impdet'])
+            # Separamos los datos
+            column = self.database['fln-impdet'][ibody].GetTitlesColumns
+            data = self.database['fln-impdet'][ibody].GetDataColumns
+            units = self.database['fln-impdet'][ibody].GetUnits
+            title = self.database['fln-impdet'][ibody].GetTitle
+
+            # Ploteamos los resultados
+            self.ax.plot(data[column[0]], data[column[1]])
+
+            self.ax.legend(loc="upper left", fontsize=10)
+            self.ax.set_xlabel('{}'.format(units[0]))
+            self.ax.set_ylabel('{}'.format(units[1]))
+            self.ax.set_title('{}'.format(title))
+
+            self.can.draw()
+
+    def __detectores_opuestos(self):
+
+        num_bodys = len(list(self.database['spc-enddet'].keys()))
+
+        # Si hay un numero par de detectores.
+        # Agrupamos los puestos
+        self.detectors_groups = []
+        # if num_bodys % 2 == 0:
+        #     for body in self.database.keys():
+        #         body = int(body)
+        #         self.detectors_groups.append([self.database[body], self.database[body+num_bodys/2]])
+        # else:
+        #     msgBox = QMessageBox()
+        #     msgBox.setText("Necesita que el número de detectores sea par, para que existan detectores opuestos.")
+        #     msgBox.setStandardButtons(QMessageBox.Cancel)
+        #     ret = msgBox.exec()
+
+        for body in self.database['spc-enddet'].keys():
+            # body = int(body)
+            self.detectors_groups.append([self.database['spc-enddet'][body], self.database['spc-enddet'][body+num_bodys/2]])
 
 class SimulatePENELOPE(QWidget):
 
@@ -2649,12 +4039,14 @@ class SimulatePENELOPE(QWidget):
         self.__Layaout_Principal()
 
         layout_Simulate = QHBoxLayout()
-        layout_Simulate.addLayout(self.llayout, 40)
-        layout_Simulate.addLayout(self.clayout, 30)
-        layout_Simulate.addLayout(self.rlayout, 30)
+        layout_Simulate.addLayout(self.llayout, 30)
+        layout_Simulate.addLayout(self.rlayout, 70)
         self.setLayout(layout_Simulate)
 
     def __Layaout_Principal(self):
+
+        # --------------------------------------------------
+        # (1) LLAYOUT
 
         # Boton para cargar input
         self.button_input = QPushButton("Load Input")
@@ -2705,11 +4097,21 @@ class SimulatePENELOPE(QWidget):
         self.llayout.addStretch()
         # ----
 
-        self.clayout = QVBoxLayout()
-        self.clayout.setContentsMargins(1, 1, 1, 1)
+        # Creamos un QTextEdit y lo hacemos editable
+        self.text_edit = QTextEdit(self)
+        self.text_edit.setReadOnly(True)
 
+        # Creamos un botón para ejecutar el comando
+        self.btn_run = QPushButton('Ejecutar Simulación', self)
+        self.btn_run.clicked.connect(self.start_simulation)
+
+        # Creamos un layout vertical y añadimos los widgets
         self.rlayout = QVBoxLayout()
         self.rlayout.setContentsMargins(1, 1, 1, 1)
+
+        self.rlayout.addWidget(self.text_edit)
+        self.rlayout.addWidget(self.btn_run)
+        # self.setLayout(rlayout)
 
     def loadFileExe(self):
 
@@ -2770,12 +4172,12 @@ class SimulatePENELOPE(QWidget):
 
     def start_simulation(self):
 
-        pathPen = self.pathFileExe.split('\\')[:-1]
+        pathPen = os.path.join('D:\\', *self.pathFileExe.split('/')[1:-1])
 
         # ------------------------------------------
         # Removemos los datos que quedaron en RUN.
         path_data = [os.path.join(pathPen, f) for f in os.listdir(pathPen)
-            if os.path.isfile(os.path.join(path_pen, f)) and
+            if os.path.isfile(os.path.join(pathPen, f)) and
             (f.endswith('.dat') or f.endswith('.rep')) and not f.startswith('PhaseSpace')]
         if len(path_data) > 0:
             for pathfile in path_data:
@@ -2785,36 +4187,61 @@ class SimulatePENELOPE(QWidget):
         # # GEOMETRIA
         # (1) Cargamos la GEOMETRIA
         path_geo = self.pathFileGeom
-
+        print(path_geo)
         # -------------------------------------------
         # # INPUT
         # (1) Cargamos el INPUT
         path_input = self.pathFileInput
+        print(path_input)
+
+        print(self.pathFileExe)
 
         # -------------------------------------------
         # # SIMULACION
-        os.system('cls')
+        # os.system('cls')
         print('-------------------------------------------------------')
         print('INICIO de simulación para un espectro energético: MonoE')
         print('-------------------------------------------------------\n')
 
         # --------------------------------------------------------
         # # Introducimos el input en el ejecutable.
-        path_cwd = os.path.join('D:\\',*path_exe.split('\\')[1:-1])
-        process = subprocess.Popen([path_exe, '<', path_input], shell=True, cwd=path_cwd)
+        path_cwd = os.path.join('D:\\',*self.pathFileExe.split('/')[1:-1])
+        print(path_cwd)
+
+        process = subprocess.Popen([self.pathFileExe, '<', path_input], shell=True, cwd=path_cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process.wait()
+
+        # Leemos la salida del proceso y la mostramos en el QTextEdit
+        while True:
+            output = process.stdout.readline().decode()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                self.text_edit.append(output.strip())
+                QApplication.processEvents()
+
+        # Mostramos los errores del proceso en caso de haberlos
+        error = process.stderr.read().decode()
+        if error:
+            self.text_edit.append(error.strip())
+
 
         # --------------------------------------------------------
         # # Movemos los resultados a la carpeta RESULTS
 
-        pathResult = os.path.join('D:\\', *self.pathFileExe.split('\\')[1:-3], 'RESULTS')
+        pathResult = os.path.join('D:\\', *self.pathFileExe.split('/')[1:-3], 'RESULTS')
 
         path_data = [os.path.join(pathPen, f) for f in os.listdir(pathPen)
             if os.path.isfile(os.path.join(pathPen, f)) and
             (f.endswith('.dat') or f.endswith('.rep')) and not f.startswith('PhaseSpace')]
 
+        pathDirResults = [nameDir for nameDir in os.listdir(pathResult) if nameDir.startswith('Ensayo_') ]
+        if len(pathDirResults) != 0:
+            e = len(pathDirResults) + 1
+        else:
+            e = 1
 
-        dest_folder = os.path.join(pathResult, 'Monoenergetic_{}'.format(e))
+        dest_folder = os.path.join(pathResult, 'Ensayo_{}'.format(e))
         if not os.path.lexists(dest_folder):
             os.makedirs(dest_folder)
 
@@ -3848,104 +5275,3 @@ if __name__ == '__main__':
     mainWin.show()
 
     sys.exit(app.exec())
-
-
-
-def PSFMoveFile():
-
-    path_psf = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Simus_Rata'
-
-    path_data = [os.path.join(path_pen, f) for f in os.listdir(path_pen)
-        if os.path.isfile(os.path.join(path_pen, f)) and
-        (f.endswith('.dat') or f.endswith('.rep'))]
-
-    path_move = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018\input'
-
-    dest_folder = os.path.join(path_move)
-    if not os.path.lexists(dest_folder):
-        os.makedirs(dest_folder)
-
-    for j in path_data:
-        shutil.move(j, dest_folder)
-
-def PSFLoadFile(pathfile):
-
-    with open(pathfile) as f:
-        datos = f.readlines()
-
-    # columnas = ['KPAR', 'E', 'X','Y','Z','U','V','W','ILB1','ILB2','ILB3','ILB4', 'NSHI']
-    columnas = [[] for _ in range(len(datos[0].split()))]
-
-    for linea in datos:
-        valores = linea.split()
-        for i, val in enumerate(valores):
-            columnas[i].append(val)
-
-    # print(columnas)
-
-def simulated_penelope(path_pen=None, path_exe=None, path_result=None):
-
-
-
-# MAIN
-def XFSimulations(pathfolder):
-
-    # Limpiamos pantalla.
-    os.system('cls')
-    print('\n')
-
-    print('-------------------------------------------------------')
-    print('METODO COMBINADO DE DISTRIBUCION DE CARGA EN DETECTORES')
-    print('-------------------------------------------------------\n')
-
-    # -------------------------------------------------------------------
-    # (1) Definimos los paths de COMP, RESULT y RUN, y los path pen y exe
-
-    path_comp = os.path.join(pathfolder, 'COMP')
-    path_result = os.path.join(pathfolder, 'RESULTS')
-    path_run = os.path.join(pathfolder, 'RUN')
-
-    # -----------------------------------------------------------------
-    # (2) Definimos la actividades que se pueden realizar.
-
-    print('MENU:')
-    print('-----\n')
-
-    temp = True
-    while temp:
-
-        activity_list = ['Realizar nueva simulación', 'Plotear resultados']
-        respuesta = option_list(answer_list=activity_list, input_type='int', question=' - Acciones disponibles', return_type=False)
-
-        if respuesta == 0:
-
-            print('PRECONFIGURACIÓN:')
-            print('-----------------\n')
-
-            # Elegimos el path del PEN a utilizar
-            list_path = [f for f in os.listdir(path_run)]
-            pen = option_list(answer_list=list_path, input_type='int', question=' - Elegir PEN a utilizar')
-            path_pen = os.path.join(path_run, pen)
-
-            # Elegimos el path del ejecutable a utilizar
-            list_path = [f for f in os.listdir(path_pen) if f.endswith('.exe')]
-            exe = option_list(answer_list=list_path, input_type='int', question=' - Elegir que ejecutable utilizar')
-            path_exe = os.path.join(path_pen, exe)
-
-            simulated_penelope(path_pen=path_pen, path_exe=path_exe, path_result=path_result)
-
-        elif respuesta == 1:
-
-            # Elegimos el path del PEN a utilizar
-            list_path = [f for f in os.listdir(path_run)]
-            pen = option_list(answer_list=list_path, input_type='int', question=' - Elegir PEN a utilizar')
-            path_pen = os.path.join(path_run, pen)
-
-            plot_show = PlotTools
-            plot_show.PlotTools(path_results=path_result, path_pen=path_pen)
-
-        respuesta = option_list(input_type='string', question=' - ¿Desea continuar?', return_type=False)
-        if respuesta:
-            temp = True
-        else:
-            temp = False
