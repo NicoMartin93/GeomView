@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import numpy as np
+import shutil
 import plotly.graph_objects as go
 import subprocess
 from GeomView.main import MainWindow
@@ -3897,7 +3898,7 @@ class plotsTools(QWidget):
             self.rlayout.addWidget(self.can)
 
             self.__labels = [column[1],column[3],column[5], column[7]]
-            print(column)
+
             # here you can set up your figure/axis
             self.ax = self.can.figure.add_subplot(111)
             matplotlib.rcParams.update({'font.size': 8})
@@ -4187,26 +4188,16 @@ class SimulatePENELOPE(QWidget):
         # # GEOMETRIA
         # (1) Cargamos la GEOMETRIA
         path_geo = self.pathFileGeom
-        print(path_geo)
         # -------------------------------------------
         # # INPUT
         # (1) Cargamos el INPUT
         path_input = self.pathFileInput
-        print(path_input)
-
-        print(self.pathFileExe)
 
         # -------------------------------------------
         # # SIMULACION
-        # os.system('cls')
-        print('-------------------------------------------------------')
-        print('INICIO de simulación para un espectro energético: MonoE')
-        print('-------------------------------------------------------\n')
-
         # --------------------------------------------------------
         # # Introducimos el input en el ejecutable.
         path_cwd = os.path.join('D:\\',*self.pathFileExe.split('/')[1:-1])
-        print(path_cwd)
 
         process = subprocess.Popen([self.pathFileExe, '<', path_input], shell=True, cwd=path_cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process.wait()
@@ -4248,15 +4239,15 @@ class SimulatePENELOPE(QWidget):
         for j in path_data:
             shutil.move(j, dest_folder)
 
-        print('----------------------------------------------------')
-        print('FIN de simulación para un espectro energético: MonoE')
-        print('----------------------------------------------------\n')
-
 class Plot3DView(QWidget):
 
     def __init__(self):
         super(Plot3DView, self).__init__()
 
+        # Iniciamos parametros
+        self._activeSource = False
+
+        # Iniciamos la pantalla principal
         self.__Layaout_Principal()
 
         layout_DataPlot = QHBoxLayout()
