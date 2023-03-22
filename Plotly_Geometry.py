@@ -45,506 +45,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 import itertools
 from itertools import groupby
 from MonteCarlo.Utils.utils import option_list, print_list_columns
-#
-# class LoadVoxGeom():
-#
-#     class Coordinate():
-#
-#         def __init__(self, xyz):
-#             self.x = xyz[0]
-#             self.y = xyz[1]
-#             self.z = xyz[2]
-#
-#     class VoxelData():
-#
-#         def __init__(self,data):
-#         print("Making voxels")
-#         self.data = data
-#         self.triangles = np.zeros((np.size(np.shape(self.data)),1))
-#         self.xyz = self.get_coords()
-#         # self.x = self.xyz[0,:]
-#         # self.y = self.xyz[1,:]
-#         # self.z = self.xyz[2,:]
-#         self.x_length = np.size(data,0)
-#         self.y_length = np.size(data,1)
-#         self.z_length = np.size(data,2)
-#         self.vert_count = 0
-#         self.vertices = self.make_edge_verts()
-#         self.triangles = np.delete(self.triangles, 0,1)
-#         #self.make_triangles()
-#
-#
-#         def get_coords(self):
-#             indices = np.nonzero(self.data)
-#             indices = np.stack((indices[0], indices[1],indices[2]))
-#             return indices
-#
-#         def has_voxel(self,neighbor_coord):
-#             return self.data[neighbor_coord[0],neighbor_coord[1],neighbor_coord[2]]
-#
-#
-#         def get_neighbor(self, voxel_coords, direction):
-#             x = voxel_coords[0]
-#             y = voxel_coords[1]
-#             z = voxel_coords[2]
-#             offset_to_check = CubeData.offsets[direction]
-#             neighbor_coord = [x+ offset_to_check[0], y+offset_to_check[1], z+offset_to_check[2]]
-#
-#             # return 0 if neighbor out of bounds or nonexistent
-#             if (any(np.less(neighbor_coord,0)) | (neighbor_coord[0] >= self.x_length) | (neighbor_coord[1] >= self.y_length) | (neighbor_coord[2] >= self.z_length)):
-#                 return 0
-#             else:
-#                 return self.has_voxel(neighbor_coord)
-#
-#
-#         def remove_redundant_coords(self, cube):
-#             i = 0
-#             while(i < np.size(cube,1)):
-#                 coord = (cube.T)[i]
-#                 cu = cube[:, cube[0,:] == coord[0]]
-#                 cu = cu[:, cu[1,:] == coord[1]]
-#                 cu = cu[:, cu[2,:] == coord[2]]
-#                 # if more than one coord of same value, delete
-#                 if i >= np.size(cube,1):
-#                     break
-#                 if np.size(cu, 1) >1:
-#                     cube = np.delete(cube, i, 1)
-#                     i = i-1
-#                 i+=1
-#             return cube
-#
-#
-#         def make_face(self, voxel, direction):
-#             voxel_coords = self.xyz[:, voxel]
-#             explicit_dir = CubeData.direction[direction]
-#             vert_order = CubeData.face_triangles[explicit_dir]
-#
-#             # Use if triangle order gets fixed
-#             # next_triangles = np.add(vert_order, voxel)
-#             # next_i = [next_triangles[0], next_triangles[0]]
-#             # next_j = [next_triangles[1], next_triangles[2]]
-#             # next_k = [next_triangles[2], next_triangles[3]]
-#
-#             next_i = [self.vert_count, self.vert_count]
-#             next_j = [self.vert_count+1, self.vert_count+2]
-#             next_k = [self.vert_count+2, self.vert_count+3]
-#
-#             next_tri = np.vstack((next_i, next_j, next_k))
-#             self.triangles = np.hstack((self.triangles, next_tri))
-#             # self.triangles = np.vstack((self.triangles, next_triangles))
-#
-#             face_verts = np.zeros((len(voxel_coords),len(vert_order)))
-#             for i in range(len(vert_order)):
-#                 face_verts[:,i] = voxel_coords + CubeData.cube_verts[vert_order[i]]
-#
-#             self.vert_count = self.vert_count+4
-#             return face_verts
-#
-#
-#         def make_cube_verts(self, voxel):
-#             voxel_coords = self.xyz[:, voxel]
-#             cube = np.zeros((len(voxel_coords), 1))
-#
-#             # only make a new face if there's no neighbor in that direction
-#             dirs_no_neighbor = []
-#             for direction in range(len(CubeData.direction)):
-#                 if np.any(self.get_neighbor(voxel_coords, direction)):
-#                     continue
-#                 else:
-#                     dirs_no_neighbor = np.append(dirs_no_neighbor, direction)
-#                     face = self.make_face(voxel, direction)
-#                     cube = np.append(cube,face, axis=1)
-#
-#             # remove cube initialization
-#             cube = np.delete(cube, 0, 1)
-#
-#             # remove redundant entries: not doing this cuz it messes up the triangle order
-#             # and i'm too lazy to fix that so excess vertices it is
-#             # cube = self.remove_redundant_coords(cube)
-#             return cube
-#
-#
-#         def make_edge_verts(self):
-#             # make only outer vertices
-#             edge_verts = np.zeros((np.size(self.xyz, 0),1))
-#             num_voxels = np.size(self.xyz, 1)
-#             for voxel in range(num_voxels):
-#                 cube = self.make_cube_verts(voxel)          # passing voxel num rather than
-#                 edge_verts = np.append(edge_verts, cube, axis=1)
-#             edge_verts = np.delete(edge_verts, 0,1)
-#             return edge_verts
-#
-#     class CubeData:
-#         # all data and knowledge from https://github.com/boardtobits/procedural-mesh-tutorial/blob/master/CubeMeshData.cs
-#         # for creating faces correctly by direction
-#         face_triangles = {
-#     		'North':  [0, 1, 2, 3 ],        # +y
-#             'East': [ 5, 0, 3, 6 ],         # +x
-#     	    'South': [ 4, 5, 6, 7 ],        # -y
-#             'West': [ 1, 4, 7, 2 ],         # -x
-#             'Up': [ 5, 4, 1, 0 ],           # +z
-#             'Down': [ 3, 2, 7, 6 ]          # -z
-#     	}
-#
-#         cube_verts = [
-#             [1,1,1],
-#             [0,1,1],
-#             [0,1,0],
-#             [1,1,0],
-#             [0,0,1],
-#             [1,0,1],
-#             [1,0,0],
-#             [0,0,0],
-#         ]
-#
-#         # cool twist
-#         # cube_verts = [
-#         #     [0,0,0],
-#         #     [1,0,0],
-#         #     [1,0,1],
-#         #     [0,0,1],
-#         #     [0,1,1],
-#         #     [1,1,1],
-#         #     [1,1,0],
-#         #     [0,1,0],
-#         # ]
-#
-#         # og
-#         # cube_verts = [
-#         #     [1,1,1],
-#         #     [0,1,1],
-#         #     [0,0,1],
-#         #     [1,0,1],
-#         #     [0,1,0],
-#         #     [1,1,0],
-#         #     [1,0,0],
-#         #     [0,0,0]
-#         # ]
-#
-#         direction = [
-#             'North',
-#             'East',
-#             'South',
-#             'West',
-#             'Up',
-#             'Down'
-#         ]
-#
-#         opposing_directions = [
-#             ['North','South'],
-#             ['East','West'],
-#             ['Up', 'Down']
-#         ]
-#
-#         # xyz direction corresponding to 'Direction'
-#         offsets = [
-#             [0, 1, 0],
-#             [1, 0, 0],
-#             [0, -1, 0],
-#             [-1, 0, 0],
-#             [0, 0, 1],
-#             [0, 0, -1],
-#         ]
-#         # offsets = [
-#         #     [0, 0, 1],
-#         #     [1, 0, 0],
-#         #     [0, 0, -1],
-#         #     [-1, 0, 0],
-#         #     [0, 1, 0],
-#         #     [0, -1, 0]
-#         # ]
-#
-#     # ------------
-#     # LOADER DATA
-#
-#     import os
-#     import os.path
-#     import numpy as np
-#     from toy_volume_gen_class import Toy_Volume
-#     from random import randint
-#
-#
-#     EXTENSIONS = ['.npy', '.NPY']
-#
-#     def is_acceptable(filename):
-#         return any(filename.endswith(extension) for extension in EXTENSIONS)
-#
-#     def load_data(opt):
-#         data_paths = []
-#         data = []
-#
-#         # Read in all numpy arrays in curr dir unless 'filename' was specified
-#         if not opt.file_name:         # if no filename given
-#             assert os.path.isdir(opt.dataroot), '%s is not a valid directory' % opt.dataroot
-#
-#             for root, dir, fnames in sorted(os.walk(opt.dataroot)):
-#                 for fname in fnames:
-#                     if is_acceptable(fname):
-#                         data_path = os.path.join(root,fname)
-#                         data_paths.append(data_path)
-#         else:
-#             data_paths = opt.file_name
-#
-#         # Make toy dataset if no files found or opt set
-#         if opt.toy_dataset:
-#             print('Making toy dataset')
-#             d = opt.toy_dataset
-#             # data = np.floor(np.random.rand(d,d,d)*2)
-#             # data = data > 0
-#
-#             n_reps, n_classes = 4, 3
-#             width, height, depth = d,d,d
-#             colour_channels = 3
-#
-#             td = Toy_Volume(n_classes, width, height, depth, colour_channels)
-#
-#             for rep in range(n_reps):
-#                 for colour_idx in range(n_classes):
-#                     #td.set_colour_to_random_xyz(colour_idx)
-#                     x, y, z = td.get_random_xyz()
-#                     rand_x_len = randint(1, int(td.width/4))
-#                     rand_y_len = randint(1, int(td.height/4))
-#                     rand_z_len = randint(1, int(td.depth/4))
-#                     rnd_i = randint(0, 1)
-#                     if rnd_i == 0:
-#                         td.set_rect_cuboid_to_xyz(x, y, z,
-#                                                 rand_x_len, rand_y_len, rand_z_len,
-#                                                 colour_idx)
-#                     elif rnd_i == 1:
-#                         td.set_ellipsoid_to_xyz(x, y, z,
-#                                                 rand_x_len, rand_y_len, rand_z_len,
-#                                                 colour_idx)
-#
-#             data = td.volume
-#             data = data[:,:,:,1]
-#
-#         else:
-#             assert data_paths, 'The directory %s does not contain files with valid extensions %s' % (opt.dataroot, EXTENSIONS)
-#             print("data_paths", data_paths)
-#             data = np.load(data_paths)
-#
-#
-#         return data
-#
-#     ##########################################################################################################
-#     # Joe's toy_volume_gen.py script below so i can use the volume for trial
-#     ##########################################################################################################
-#
-#     import numpy as np
-#     from random import randint
-#
-#
-#     class Toy_Volume:
-#         def __init__(self, n_classes, width, height, depth, colour_channels=3):
-#             self.init_check(n_classes, width, height, depth, colour_channels)
-#             self.n_classes = n_classes
-#             self.width = width
-#             self.height = height
-#             self.depth = depth
-#             self.colour_channels = colour_channels
-#             self.class_colours = Toy_Volume.get_class_colours(n_classes, colour_channels)
-#             self.volume = self.get_empty_array()
-#             self.one_hot_array = self.get_empty_array(channels=self.n_classes)
-#
-#         def init_check(self, n_classes, width, height, depth, colour_channels):
-#             assert type(n_classes) is int, "n_classes must be of type int"
-#             assert n_classes > 0, "Need at least one class"
-#             assert width > 0, "Need postive width"
-#             assert height > 0, "Need positive height"
-#             assert depth > 0, "Need positive depth"
-#             assert (colour_channels == 3) or (colour_channels == 1), "Either RGB or grayscale"
-#
-#         @staticmethod
-#         def get_class_colours(n_classes, colour_channels):
-#             """ Generates random colours to be visualised with and returns the list """
-#             classes = []
-#             for class_idx in range(n_classes):
-#                 count = 0
-#                 valid = False
-#                 while( not valid ):
-#                     colour = Toy_Volume.get_random_colour(colour_channels)
-#                     if colour not in classes:
-#                         classes.append(colour)
-#                         valid = True
-#             return classes
-#
-#         @staticmethod
-#         def get_random_colour(colour_channels):
-#             """ Returns a random colour """
-#             if colour_channels == 1:
-#                 return [randint(0,255)]
-#             return [randint(0,255)/255,randint(0,255)/255,randint(0,255)/255]
-#
-#         def get_empty_array(self, channels=None):
-#             """ Empty starting array """
-#             if channels is None:
-#                 channels = self.colour_channels
-#             return np.zeros([self.width, self.height, self.depth, channels], dtype=float)
-#
-#         def get_random_xyz(self):
-#             x = randint(0, self.width-1)
-#             y = randint(0, self.height-1)
-#             z = randint(0, self.depth-1)
-#             return x, y, z
-#
-#         def set_colour_to_xyz(self, x, y, z, colour_idx):
-#             """ Sets the colour for a specific pixel """
-#             if self.colour_channels == 1:
-#                 self.volume[x][y][z][0] = self.class_colours[colour_idx][0]
-#             else:
-#                 self.volume[x][y][z][0] = self.class_colours[colour_idx][0]
-#                 self.volume[x][y][z][1] = self.class_colours[colour_idx][1]
-#                 self.volume[x][y][z][2] = self.class_colours[colour_idx][2]
-#             self.one_hot_array[x][y][z][:] = 0
-#             self.one_hot_array[x][y][z][colour_idx] = 1
-#
-#         def set_colour_to_random_xyz(self, colour_idx):
-#             self.set_colour_to_xyz(*self.get_random_xyz(), colour_idx)
-#
-#         def get_volume_cube_range(self, x, y, z, length):
-#             assert type(length) is int, "length must be an int, it should be half the width of the object"
-#             (x_min, x_max) = self.get_axis_range(x, length, self.width)
-#             (y_min, y_max) = self.get_axis_range(y, length, self.height)
-#             (z_min, z_max) = self.get_axis_range(z, length, self.depth)
-#             return (x_min, x_max), (y_min, y_max), (z_min, z_max)
-#
-#         def get_axis_range(self, axis_pos, axis_length, frame_length):
-#             inputs = (axis_pos, axis_length)
-#             (axis_min, axis_max) = (self.get_shape_range_min(*inputs), self.get_shape_range_max(*inputs, frame_length))
-#             return (axis_min, axis_max)
-#
-#         def get_shape_range_min(self, axis_pos, length):
-#             assert type(length) is int, "length must be an int"
-#             temp_min = axis_pos - length
-#             range_min = temp_min if temp_min > 0 else 0
-#             return range_min
-#
-#         def get_shape_range_max(self, axis_pos, length, frame_length):
-#             assert type(length) is int, "length must be an int"
-#             temp_max = axis_pos + length
-#             range_max = temp_max if temp_max < (frame_length - 1) else frame_length
-#             return range_max
-#
-#         def set_rect_cuboid_to_xyz(self, x, y, z,
-#                                    x_length, y_length, z_length,
-#                                    colour_idx):
-#             (x_min, x_max) = self.get_axis_range(x, x_length, self.width)
-#             (y_min, y_max) = self.get_axis_range(y, y_length, self.height)
-#             (z_min, z_max) = self.get_axis_range(z, z_length, self.depth)
-#             for x_ in range(x_min, x_max):
-#                 for y_ in range(y_min, y_max):
-#                     for z_ in range(z_min, z_max):
-#                         self.set_colour_to_xyz(x_, y_, z_, colour_idx)
-#
-#         def set_cube_to_xyz(self, x, y, z, length, colour_idx):
-#             self.set_rect_cuboid_to_xyz(x, y, z, length, length, length, colour_idx)
-#
-#         def is_in_sphere(self, x, y, z, centre, radius):
-#             return self.is_in_ellipsoid(x, y, z, centre, radius, radius, radius)
-#
-#         def is_in_ellipsoid(self, x, y, z, centre, x_radius, y_radius, z_radius):
-#             x_centre, y_centre, z_centre = centre
-#             if ((x_centre-x)**2)/x_radius**2 + ((y_centre-y)**2)/y_radius**2 + ((z_centre-z)**2)/z_radius**2 < 1:
-#                 return True
-#             return False
-#
-#         def set_sphere_to_xyz(self, x, y, z, radius, colour_idx):
-#             self.set_ellipsoid_to_xyz(x, y, z, radius, radius, radius, colour_idx)
-#
-#         def set_ellipsoid_to_xyz(self, x, y, z, x_radius, y_radius, z_radius, colour_idx):
-#             (x_min, x_max) = self.get_axis_range(x, x_radius, self.width)
-#             (y_min, y_max) = self.get_axis_range(y, y_radius, self.height)
-#             (z_min, z_max) = self.get_axis_range(z, z_radius, self.depth)
-#             for x_ in range(x_min, x_max):
-#                 for y_ in range(y_min, y_max):
-#                     for z_ in range(z_min, z_max):
-#                         if self.is_in_ellipsoid(x_, y_, z_, (x, y, z), x_radius, y_radius, z_radius):
-#                             self.set_colour_to_xyz(x_, y_, z_, colour_idx)
-#
-#
-#     def get_test_volumes(n_volumes, n_reps, n_classes,
-#                          width, height, depth, colour_channels):
-#         #volumes, one_hots = [], []
-#         volumes, one_hots = None, None
-#
-#         return volumes, one_hots
-#
-#     def plot_volume(volume, show=True):
-#         voxel = volume[:,:,:,0] > 0
-#         import matplotlib.pyplot as plt
-#         from mpl_toolkits.mplot3d import Axes3D
-#         fig = plt.figure()
-#         ax = fig.gca(projection='3d')
-#         ax.voxels(voxel, facecolors=volume, linewidth=0.5)
-#         if show:
-#             plt.show()
-#
-#
-#     def rgb_to_hex(rgb):
-#         assert type(rgb) is list
-#         assert len(rgb) == 3
-#         assert all((0 <= col < 256 and type(col) is int) for col in rgb), "The colours must be an int from 0 to 255"
-#         return '#%02x%02x%02x' % tuple(rgb)
-#
-#     if __name__ == "__main__":
-#         n_reps, n_classes = 4, 3
-#         width, height, depth = 100, 100, 100
-#         colour_channels = 3
-#
-#         td = Toy_Volume(n_classes, width, height, depth, colour_channels)
-#
-#         for rep in range(n_reps):
-#             for colour_idx in range(n_classes):
-#                 #td.set_colour_to_random_xyz(colour_idx)
-#                 x, y, z = td.get_random_xyz()
-#                 rand_x_len = randint(1, int(td.width/4))
-#                 rand_y_len = randint(1, int(td.height/4))
-#                 rand_z_len = randint(1, int(td.depth/4))
-#                 rnd_i = randint(0, 1)
-#                 if rnd_i == 0:
-#                     td.set_rect_cuboid_to_xyz(x, y, z,
-#                                               rand_x_len, rand_y_len, rand_z_len,
-#                                               colour_idx)
-#                 elif rnd_i == 1:
-#                     td.set_ellipsoid_to_xyz(x, y, z,
-#                                             rand_x_len, rand_y_len, rand_z_len,
-#                                             colour_idx)
-#
-#
-#
-#     ##########################################################################################################
-#     # End joe's toy_volume_gen.py (copied as is)
-#     ##########################################################################################################
-#
-#     from options import Options
-#     from data_loader import load_data
-#     from VoxelData import VoxelData
-#     import plotly.graph_objects as go
-#     import matplotlib.pyplot as plt
-#     import numpy as np
-#
-#     if __name__ == "__main__":
-#
-#         opt = Options().parse()
-#         data = load_data(opt)
-#
-#         Voxels = VoxelData(data)
-#         # print("Voxels.data\n",Voxels.data)
-#         # print("Voxels.vertices\n",Voxels.vertices)
-#         # print("Voxels.triangles\n",Voxels.triangles)
-#
-#         print("Generating figure")
-#         fig = go.Figure(data=go.Mesh3d(
-#             x=Voxels.vertices[0],
-#             y=Voxels.vertices[1],
-#             z=Voxels.vertices[2],
-#             i=Voxels.triangles[0],
-#             j=Voxels.triangles[1],
-#             k=Voxels.triangles[2]
-#             ))
-#         fig.show()
-#
-
 
 
 class LoadDataResults():
@@ -588,7 +88,7 @@ class LoadDataResults():
             self.TypeDataFile = 'psf-impdet'
             self.Body = basename.split('-')[-1].split('.')[0]
 
-        if basename.startswith('fln-impdet'):
+        if basename.startswith('fln-impdet-'):
             self.GetData = self.__LoadData_FLN_ImpDet(string_list)
             self.TypeDataFile = 'fln-impdet'
             self.Body = basename.split('-')[-1].split('.')[0]
@@ -3715,8 +3215,15 @@ def style_names(list_name):
         style_list = ['XY', 'XZ', 'YZ']
     if list_name == 'materials':
         style_list = ['CdTe', 'Ge', 'Si']
-    if list_name == 'type_plot':
+    if list_name == 'type_data':
         style_list = ['Espectro antes del detector', 'Espectro despues del detector', 'Espacio de fase', 'Fluencia antes del detector']
+    if list_name == 'type_plot1':
+        style_list = ['','Densidad de probabilidades', 'Densidad electrones', 'Densidad fotones', 'Densidad positrones']
+    if list_name == 'type_plot2':
+        style_list = ['Energía depositada']
+    if list_name == 'type_plot3':
+        style_list = ['Fluencia total', ' Fluencia de electrones', 'Fluencia de fotones', 'Fluencia de positrones']
+
     result = []
     for style in style_list:
         if style.lower() == style_list:
@@ -3796,34 +3303,53 @@ class plotsTools(QWidget):
         # # Panel IZQUIERDO - Configuraciones
 
         # Tipo de datos para visualizar
-        self._type_plot = QComboBox()
-        init_widget(self._type_plot, "styleComboBox")
-        self._type_plot.addItems(style_names(list_name='type_plot'))
+        self._type_data = QComboBox()
+        init_widget(self._type_data, "styleComboBox")
+        self._type_data.addItems(style_names(list_name='type_data'))
+
+        # Tipo de columnas para visualizar
+        self._type_plot1 = QComboBox()
+        init_widget(self._type_plot1, "styleComboBox")
+        self._type_plot1.addItems(style_names(list_name='type_plot1'))
+        self._type_plot1.setVisible(False)
+
+        self._type_plot2 = QComboBox()
+        init_widget(self._type_plot2, "styleComboBox")
+        self._type_plot2.addItems(style_names(list_name='type_plot2'))
+        self._type_plot2.setVisible(False)
+
+        self._type_plot3 = QComboBox()
+        init_widget(self._type_plot3, "styleComboBox")
+        self._type_plot3.addItems(style_names(list_name='type_plot3'))
+        self._type_plot3.setVisible(False)
 
         # Detector para visualizar
         self._nbody = QDoubleSpinBox()
         self._nbody.setPrefix("Detector: ")
         self._nbody.setValue(1)
         self._nbody.setRange(1, self.num_bodys)
-        init_widget(self._nbody, "xdim")
+        init_widget(self._nbody, "nbody")
 
         # Boton de ejecución para visualizar el plot elegido
         self.button_view = QPushButton("Ver")
         init_widget(self.button_view, "view_label")
 
-
+        # ------
         # # Agregamos el layout
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
 
-        self.label1 = QLabel("PLOTS DE DATOS")
+        self.label1 = QLabel("                      PLOTS DE DATOS")
         self.label1.setStyleSheet("border: 2px solid gray; position: center;")
         self.llayout.addWidget(self.label1)
 
         self.llayout.addWidget(QLabel("Datos para visualizar:"))
-        self.llayout.addWidget(self._type_plot)
+        self.llayout.addWidget(self._type_data)
 
-
+        self.label2 = QLabel("Columna de datos para visualizar:")
+        self.llayout.addWidget(self._type_plot1)
+        self.llayout.addWidget(self._type_plot2)
+        self.llayout.addWidget(self._type_plot3)
 
         self.llayout.addWidget(QLabel("Detector:"))
         self.llayout.addWidget(self._nbody)
@@ -3834,6 +3360,7 @@ class plotsTools(QWidget):
 
         # # Agregamos las Conexiones
         self.button_view.clicked.connect(self.__ViewPlot)
+        self._type_data.currentIndexChanged.connect(self.__OptionsPut)
 
         # --------------------------------------------------
         # # Panel DERECHO - PLOTS
@@ -3844,18 +3371,29 @@ class plotsTools(QWidget):
         self.can = FigureCanvasQTAgg(self.fig)
         self.rlayout.addWidget(self.can)
 
-    def __sourcePut(self, state):
+    def __OptionsPut(self, state):
 
-        if state == Qt.Checked:
-            self._xs.setVisible(True)
-            self._ys.setVisible(True)
-            self._zs.setVisible(True)
-            self._activeSource = True
-        else:
-            self._xs.setVisible(False)
-            self._ys.setVisible(False)
-            self._zs.setVisible(False)
-            self._activeSource = False
+        if str(self._type_data.currentText())=='Espectro antes del detector':
+            self._type_plot1.setVisible(True)
+            self._type_plot2.setVisible(False)
+            self._type_plot3.setVisible(False)
+
+        if str(self._type_data.currentText())=='Espectro despues del detector':
+            self._type_plot1.setVisible(False)
+            self._type_plot2.setVisible(True)
+            self._type_plot3.setVisible(False)
+
+
+        if str(self._type_data.currentText())=='Fluencia antes del detector':
+            self._type_plot1.setVisible(False)
+            self._type_plot2.setVisible(False)
+            self._type_plot3.setVisible(True)
+
+        if str(self._type_data.currentText())=='':
+            self._type_plot1.setVisible(False)
+            self._type_plot2.setVisible(False)
+            self._type_plot3.setVisible(False)
+
 
     def __func(self,label):
         index = self.__labels.index(label)
@@ -3865,12 +3403,13 @@ class plotsTools(QWidget):
     def __ViewPlot(self):
 
         # (1) Extraemos los datos
+        print(self.database)
         ibody = str(self._nbody.value()).split('.')[0]
         if len(ibody) < 2:
             ibody = '0'+ibody
-        type_plot = str(self._type_plot.currentText())
+        type_data = str(self._type_data.currentText())
 
-        if type_plot == 'Espectro antes del detector':
+        if type_data == 'Espectro antes del detector':
 
             # (1) --- SEPARAMOS LOS DATOS
             # Separamos los datos
@@ -3879,8 +3418,8 @@ class plotsTools(QWidget):
             units = self.database['spc-impdet'][ibody].GetUnits
             title = self.database['spc-impdet'][ibody].GetTitle
 
-            energy = data[column[0]]
-            den_prob = data[column[1]]
+            energy = np.array(data[column[0]])
+            den_prob = np.array(data[column[1]])
             su_den_prob = data[column[2]]
             dp_electron = data[column[3]]
             su_dp_electron = data[column[4]]
@@ -3897,34 +3436,26 @@ class plotsTools(QWidget):
             self.can = FigureCanvasQTAgg(self.fig)
             self.rlayout.addWidget(self.can)
 
-            self.__labels = [column[1],column[3],column[5], column[7]]
-
             # here you can set up your figure/axis
             self.ax = self.can.figure.add_subplot(111)
             matplotlib.rcParams.update({'font.size': 8})
 
-            plot1, = self.ax.plot(energy, den_prob, 'b-', label=self.__labels[0])
-            plot2, = self.ax.plot(energy, dp_electron, 'r-', label=self.__labels[1])
-            plot3, = self.ax.plot(energy, dp_fotones, 'g-', label=self.__labels[2])
-            plot4, = self.ax.plot(energy, dp_positrons, 'y-', label=self.__labels[3])
-
-            self.__plots = [plot1, plot2, plot3, plot4]
+            # q25, q75 = np.percentile(den_prob, [25, 75])
+            # bin_width = 2 * (q75 - q25) * len(den_prob) ** (-1/3)
+            # bins = round((den_prob.max() - den_prob.min()) / bin_width)
+            # print("Freedman–Diaconis number of bins:", bins)
+            # plt.hist(x, bins=bins);
+            bins = 300
+            self.ax.hist(den_prob, bins=bins, label='Data')
 
             self.ax.legend(loc="upper left", fontsize=10)
             self.ax.set_xlabel('{}'.format(units[0]))
             self.ax.set_ylabel('{}'.format(units[1]))
             self.ax.set_title('{}'.format(title))
 
-            visibility = [line.get_visible() for line in self.__plots]
-            axcolor = 'lightgoldenrodyellow'
-            rax = self.can.figure.add_axes([0.8, 0.7, 0.15, 0.15], facecolor=axcolor)
-
-            self.__check = CheckButtons(rax, self.__labels, visibility)
-            self.__check.on_clicked(self.__func)
-
             self.can.draw()
 
-        if type_plot == 'Espectro despues del detector':
+        if type_data == 'Espectro despues del detector':
 
             self.can.deleteLater()
 
@@ -3935,8 +3466,7 @@ class plotsTools(QWidget):
             # here you can set up your figure/axis
             self.ax = self.can.figure.add_subplot(111)
             matplotlib.rcParams.update({'font.size': 8})
-            print(ibody)
-            print(self.database['spc-impdet'])
+
             # Separamos los datos
             column = self.database['spc-enddet'][ibody].GetTitlesColumns
             data = self.database['spc-enddet'][ibody].GetDataColumns
@@ -3944,7 +3474,8 @@ class plotsTools(QWidget):
             title = self.database['spc-enddet'][ibody].GetTitle
 
             # Ploteamos los resultados
-            self.ax.plot(data[column[0]], data[column[1]])
+            bins=200
+            self.ax.hist(data[column[1]],bins=200)
 
             self.ax.legend(loc="upper left", fontsize=10)
             self.ax.set_xlabel('{}'.format(units[0]))
@@ -3953,7 +3484,7 @@ class plotsTools(QWidget):
 
             self.can.draw()
 
-        if type_plot == 'Fluencia del espacio de fase':
+        if type_data == 'Fluencia del espacio de fase':
 
             self.can.deleteLater()
 
@@ -3982,7 +3513,7 @@ class plotsTools(QWidget):
 
             self.can.draw()
 
-        if type_plot == 'Fluencia antes del detector':
+        if type_data == 'Fluencia antes del detector':
 
             self.can.deleteLater()
 
@@ -3993,8 +3524,7 @@ class plotsTools(QWidget):
             # here you can set up your figure/axis
             self.ax = self.can.figure.add_subplot(111)
             matplotlib.rcParams.update({'font.size': 8})
-            print(ibody)
-            print(self.database['fln-impdet'])
+
             # Separamos los datos
             column = self.database['fln-impdet'][ibody].GetTitlesColumns
             data = self.database['fln-impdet'][ibody].GetDataColumns
@@ -4277,13 +3807,13 @@ class Plot3DView(QWidget):
         # Elige una particula para visualizar
         self._nplane = QDoubleSpinBox()
         self._nplane.setPrefix("")
-        self._nplane.setValue(0)
+        self._nplane.setValue(15)
         init_widget(self._nplane, "ndetect")
 
         # Elige una particula para visualizar
         self._radio = QDoubleSpinBox()
         self._radio.setPrefix("")
-        self._radio.setValue(0)
+        self._radio.setValue(5)
         init_widget(self._radio, "radio")
 
         self._translate = QDoubleSpinBox()
@@ -4294,19 +3824,19 @@ class Plot3DView(QWidget):
 
         self._xdim = QDoubleSpinBox()
         self._xdim.setPrefix("X: ")
-        self._xdim.setValue(0)
+        self._xdim.setValue(0.5)
         self._xdim.setRange(-100, 100)
         init_widget(self._xdim, "xdim")
 
         self._ydim = QDoubleSpinBox()
         self._ydim.setPrefix("Y: ")
-        self._ydim.setValue(0)
+        self._ydim.setValue(0.5)
         self._ydim.setRange(-100, 100)
         init_widget(self._ydim, "ydim")
 
         self._zdim = QDoubleSpinBox()
         self._zdim.setPrefix("Z: ")
-        self._zdim.setValue(0)
+        self._zdim.setValue(0.1)
         self._zdim.setRange(-100, 100)
         init_widget(self._zdim, "zdim")
 
@@ -4338,15 +3868,18 @@ class Plot3DView(QWidget):
         init_widget(self.button_text, "generar_label")
 
         # -----
+
+        self.fileFLNPut = QCheckBox("¿Generar archivo fln-impdet.dat?",self)
+
         self._emin = QDoubleSpinBox()
         self._emin.setPrefix("Energía mínima: ")
-        self._emin.setValue(0)
+        self._emin.setValue(1000)
         self._emin.setRange(1000, 1000000000)
         init_widget(self._emin, "emin")
 
         self._emax = QDoubleSpinBox()
         self._emax.setPrefix("Energía máxima: ")
-        self._emax.setValue(0)
+        self._emax.setValue(1000)
         self._emax.setRange(1000, 1000000000)
         init_widget(self._emax, "emax")
 
@@ -4358,7 +3891,7 @@ class Plot3DView(QWidget):
 
         self._nprim = QDoubleSpinBox()
         self._nprim.setPrefix("Primarios: ")
-        self._nprim.setValue(0)
+        self._nprim.setValue(10000)
         self._nprim.setRange(1, 1000000000)
         init_widget(self._nprim, "nprimarios")
 
@@ -4423,6 +3956,7 @@ class Plot3DView(QWidget):
         # ---
         self.label3 = QLabel("               ARCHIVO DE INPUT-PENELOPE")
         self.label3.setStyleSheet("border: 2px solid gray; position: center;")
+        self.llayout.addWidget(self.fileFLNPut)
         self.llayout.addWidget(self.label3)
         self.llayout.addWidget(self._emin)
         self.llayout.addWidget(self._emax)
@@ -4438,6 +3972,7 @@ class Plot3DView(QWidget):
         self.button_text.clicked.connect(self.__ConstructGeometry)
         self.button_input.clicked.connect(self.__ConstructInput)
         self.sourcePut.stateChanged.connect(self.__sourcePut)
+        self.fileFLNPut.stateChanged.connect(self.__FileFLNPut)
         # --------------------------------------------------
         # # Panel DERECHO - Definición de configuraciones
 
@@ -4459,6 +3994,12 @@ class Plot3DView(QWidget):
             self._zs.setVisible(False)
             self._activeSource = False
 
+    def __FileFLNPut(self, state):
+
+        if state == Qt.Checked:
+            self.__activeFile = 2
+        else:
+            self.__activeFile = 0
 
     # ========= FUNCIONES DE CALCULO ==========
 
@@ -5056,7 +4597,7 @@ class Plot3DView(QWidget):
         # Impact
         string_list.append('       >>>>>>>> Impact detectors (up to 25 different detectors).\n')
         for j in range(1,ndetectors+1):
-            string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'0','0'))
+            string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'0',self.__activeFile))
             string_list.append('IDBODY {}\n'.format(j))
         string_list.append('       .\n')
 
