@@ -161,7 +161,6 @@ class MainWindow(QMainWindow):
         self.central_widget.addWidget(self.bodies_widget)
         self.central_widget.setCurrentWidget(self.bodies_widget)
 
-
 class SurfacesWidget(QWidget):
 
     def __init__(self, parent=None, data=None):
