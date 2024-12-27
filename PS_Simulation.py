@@ -3274,12 +3274,6 @@ class GeomGenerator():
 
             return verts
 
-
-# # # PRIMERA FORMA
-# pathfolder = "D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\RUN\penmain_2018"
-# cdetectors = CircleDetectors(pathfolder)
-# #
-
 # # GUI PARA CINTURON DE DETECTORES
 
 def class_name(o):
@@ -3298,6 +3292,10 @@ def style_names(list_name):
         style_list = ['XY', 'XZ', 'YZ']
     if list_name == 'materials':
         style_list = ['CdTe', 'Ge', 'Si']
+    if list_name == 'angles':
+        style_list = ['Rotación completa', 'Media rotación']
+    if list_name == 'shapes':
+        style_list = ['Paralelepipedo', 'Cilíndrico']
     if list_name == 'type_data':
         style_list = ['Espectro antes del detector', 'Espectro despues del detector', 'Espacio de fase', 'Fluencia antes del detector']
     if list_name == 'type_plot1':
@@ -3853,885 +3851,249 @@ class SimulatePENELOPE(QWidget):
             shutil.move(j, dest_folder)
 
 class Plot3DView(QWidget):
-
     def __init__(self):
-        super(Plot3DView, self).__init__()
+        super().__init__()
 
-        # Iniciamos parametros
+        # Inicializamos parámetros
         self._activeSource = False
 
-        # Iniciamos la pantalla principal
-        self.__Layaout_Principal()
+        # Configuramos la pantalla principal
+        self.setup_layout()
 
-        layout_DataPlot = QHBoxLayout()
-        layout_DataPlot.addLayout(self.llayout, 14)
-        layout_DataPlot.addLayout(self.cllayout, 84)
-        self.setLayout(layout_DataPlot)
+    def setup_layout(self):
+        """
+        Configura el diseño principal de la ventana.
+        """
+        # Configuración del panel izquierdo
+        self.setup_left_panel()
 
-    # ========= LAYAUOT PRINCIPAL =========
+        # Configuración del panel derecho
+        self.setup_right_panel()
 
-    def __Layaout_Principal(self):
+        # Layout principal
+        main_layout = QHBoxLayout()
+        main_layout.addLayout(self.llayout, 14)
+        main_layout.addLayout(self.cllayout, 84)
+        self.setLayout(main_layout)
 
-        # --------------------------------------------------
-        # # Panel IZQUIERDO - Definición de configuraciones
+    def setup_left_panel(self):
+        """
+        Configura los widgets y diseño del panel izquierdo.
+        """
 
-        # (1) Creamos y definimos caracteristicas de los widgets
+        # Widgets para configuración visual
+        self._plane = self.create_combobox("Plano", "plane")
+        self._materials = self.create_combobox("Material", "materials")
+        self._nCols = self.create_spinbox("Detectores por fila: ", 9, "ndetect")
+        self._nRows = self.create_spinbox("Detectores por columna: ", 3, "ndetect")
+        self._distance = self.create_spinbox("Distancia: ", 5, "distance")
+        self._translate = self.create_spinbox("Trasladar detectores: ", 0, "translate", 0, 100)
+        self._angles = self.create_combobox("Dispoción angular", "angles")
+        self._stepAngle = self.create_spinbox("Paso angular: ", 90, "step", 0, 360)
 
-        # # Opciones para ver datos procesados
-        self._plane = QComboBox()
-        init_widget(self._plane, "styleComboBox")
-        self._plane.addItems(style_names(list_name='plane'))
+        # Dimensiones de los detectores
+        self._xdim = self.create_spinbox("X: ", 0.1, "xdim", 0, 100)
+        self._ydim = self.create_spinbox("Y: ", 0.5, "ydim", 0, 100)
+        self._zdim = self.create_spinbox("Z: ", 0.5, "zdim", 0, 100)
+        self._shape = self.create_combobox("Forma", "shapes")
+        # Espaciado detectores
+        self._widtSample = self.create_spinbox("Ancho: ", 4, "xdim", 0, 100)
+        self._heightSample = self.create_spinbox("Alto: ", 1.5, "xdim", 0, 100)
 
-        # # Opciones para ver datos procesados
-        self._materials = QComboBox()
-        init_widget(self._materials, "styleComboBox")
-        self._materials.addItems(style_names(list_name='materials'))
+        # Botones
+        self.button_view = self.create_button("Visualizar geometría", "view_label", self.__ViewPlanes)
+        self.button_phaseSpace = self.create_button("Cargar espacio de fase", "view_label", self.__loadPhaseSpace)
 
-        # Elige una particula para visualizar
-        self._nplane = QDoubleSpinBox()
-        self._nplane.setPrefix("")
-        self._nplane.setValue(15)
-        init_widget(self._nplane, "ndetect")
-
-        # Elige una particula para visualizar
-        self._radio = QDoubleSpinBox()
-        self._radio.setPrefix("")
-        self._radio.setValue(5)
-        init_widget(self._radio, "radio")
-
-        self._translate = QDoubleSpinBox()
-        self._translate.setPrefix("")
-        self._translate.setValue(0)
-        self._translate.setRange(-100, 100)
-        init_widget(self._translate, "translate")
-
-        self._xdim = QDoubleSpinBox()
-        self._xdim.setPrefix("X: ")
-        self._xdim.setValue(0.5)
-        self._xdim.setRange(-100, 100)
-        init_widget(self._xdim, "xdim")
-
-        self._ydim = QDoubleSpinBox()
-        self._ydim.setPrefix("Y: ")
-        self._ydim.setValue(0.5)
-        self._ydim.setRange(-100, 100)
-        init_widget(self._ydim, "ydim")
-
-        self._zdim = QDoubleSpinBox()
-        self._zdim.setPrefix("Z: ")
-        self._zdim.setValue(0.1)
-        self._zdim.setRange(-100, 100)
-        init_widget(self._zdim, "zdim")
-
-
-        self._xs = QDoubleSpinBox()
-        self._xs.setPrefix("X: ")
-        self._xs.setValue(0)
-        self._xs.setRange(-100, 100)
-        init_widget(self._xs, "xs")
-
-        self._ys = QDoubleSpinBox()
-        self._ys.setPrefix("Y: ")
-        self._ys.setValue(0)
-        self._ys.setRange(-100, 100)
-        init_widget(self._ys, "ys")
-
-        self._zs = QDoubleSpinBox()
-        self._zs.setPrefix("Z: ")
-        self._zs.setValue(0)
-        self._zs.setRange(-100, 100)
-        init_widget(self._zs, "zs")
-
-        # Boton de ejecución para visualizar el plot elegido
-        self.button_view = QPushButton("View")
-        init_widget(self.button_view, "view_label")
-
-        self.button_text = QPushButton("Generar Geometría")
-        init_widget(self.button_text, "generar_label")
-
-        # -----
-
-        self.fileFLNPut = QCheckBox("¿Generar archivo fln-impdet.dat?",self)
-
-        self._emin = QDoubleSpinBox()
-        self._emin.setPrefix("Energía mínima: ")
-        self._emin.setValue(1000)
-        self._emin.setRange(1000, 1000000000)
-        init_widget(self._emin, "emin")
-
-        self._emax = QDoubleSpinBox()
-        self._emax.setPrefix("Energía máxima: ")
-        self._emax.setValue(1000)
-        self._emax.setRange(1000, 1000000000)
-        init_widget(self._emax, "emax")
-
-        self._nbins = QDoubleSpinBox()
-        self._nbins.setPrefix("Num Bins: ")
-        self._nbins.setValue(1)
-        self._nbins.setRange(1, 800)
-        init_widget(self._nbins, "nbins")
-
-        self._nprim = QDoubleSpinBox()
-        self._nprim.setPrefix("Primarios: ")
-        self._nprim.setValue(10000)
-        self._nprim.setRange(1, 1000000000)
-        init_widget(self._nprim, "nprimarios")
-
-        self.button_input = QPushButton("Generar Input")
-        init_widget(self.button_input, "input_label")
-
-        # -----
-
-        # (2) Agregamos widgets al panel
+        # Diseño del panel izquierdo
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
 
-        self.label1 = QLabel("CONFIGURACIÓN VISUAL DE ANILLOS DETECTORES")
-        self.label1.setStyleSheet("border: 2px solid gray; position: center;")
-        self.llayout.addWidget(self.label1)
-
-        self.llayout.addWidget(QLabel("Plano:"))
-        self.llayout.addWidget(self._plane)
-
-        self.llayout.addWidget(QLabel("Número de detectores:"))
-        self.llayout.addWidget(self._nplane)
-
-        self.llayout.addWidget(QLabel("Material:"))
-        self.llayout.addWidget(self._materials)
-
-        self.llayout.addWidget(QLabel("Radio del cinturon:"))
-        self.llayout.addWidget(self._radio)
-
-        self.llayout.addWidget(QLabel("Dimensiones de los detectores:"))
-        self.horizontalLayou1 = QHBoxLayout()
-        self.horizontalLayou1.addWidget(self._xdim)
-        self.horizontalLayou1.addWidget(self._ydim)
-        self.horizontalLayou1.addWidget(self._zdim)
-        self.llayout.addLayout(self.horizontalLayou1)
-
-        self.llayout.addWidget(QLabel("Trasladar detectores:"))
-        self.llayout.addWidget(self._translate)
-
-        self.llayout.addWidget(QLabel("Posición de la fuente:"))
-        self.horizontalLayou2 = QHBoxLayout()
-        self.horizontalLayou2.addWidget(self._xs)
-        self.horizontalLayou2.addWidget(self._ys)
-        self.horizontalLayou2.addWidget(self._zs)
-        self._xs.setVisible(False)
-        self._ys.setVisible(False)
-        self._zs.setVisible(False)
-        self.llayout.addLayout(self.horizontalLayou2)
-
-
-        self.llayout.addWidget(QLabel("Visualizar geometría"))
-        self.llayout.addWidget(self.button_view)
-        # self.llayout.addWidget(QLabel(""))
-
-        # ---
-        self.label2 = QLabel("             ARCHIVO DE GEOMETRIA-PENELOPE")
-        self.label2.setStyleSheet("border: 2px solid gray; position: center;")
-        self.llayout.addWidget(self.label2)
-        self.llayout.addWidget(self.button_text)
-        # self.llayout.addWidget(QLabel(""))
-
-        # ---
-        self.label3 = QLabel("               ARCHIVO DE INPUT-PENELOPE")
-        self.label3.setStyleSheet("border: 2px solid gray; position: center;")
-        self.llayout.addWidget(self.fileFLNPut)
-        self.llayout.addWidget(self.label3)
-        self.llayout.addWidget(self._emin)
-        self.llayout.addWidget(self._emax)
-        self.llayout.addWidget(self._nbins)
-        self.llayout.addWidget(self._nprim)
-        self.llayout.addWidget(self.button_input)
+        # Geometría y archivo input
+        self.add_section_label("ARCHIVO DE ESPACIO DE FASE", self.llayout)
+        self.add_widgets_to_layout(self.llayout, [
+            ("Cargar archivo", self.button_phaseSpace),
+        ])
 
         self.llayout.addStretch()
+        # Configuración visual
+        self.add_section_label("CONFIGURACIÓN VISUAL DE ANILLOS DETECTORES", self.llayout)
+        self.add_widgets_to_layout(self.llayout, [
+            ("Plano:", self._plane),
+            ("Detectores por fila: ", self._nCols),
+            ("Detectores por columna: ", self._nRows),
+            ("Material: ", self._materials),
+            ("Distancia de la muestra: ", self._distance),
+            ("Rotación: ", self._angles),
+            ("Paso angular: ", self._stepAngle),
+            ("Dimensiones de los detectores: ", [self._xdim, self._ydim, self._zdim]),
+            ("Ancho y alto de la muestra: ", [self._widtSample, self._heightSample]),
+            ("Forma del detector: ", self._shape),
+            ("Trasladar detectores: ", self._translate),
+            ("Visualizar geometría", self.button_view),
+        ])
 
-
-        # (3) Agregamos las conexiones
-        self.button_view.clicked.connect(self.__ViewPlanes)
-        self.button_text.clicked.connect(self.__ConstructGeometry)
-        self.button_input.clicked.connect(self.__ConstructInput)
-        self.fileFLNPut.stateChanged.connect(self.__FileFLNPut)
-        # --------------------------------------------------
-        # # Panel DERECHO - Definición de configuraciones
-
+    def setup_right_panel(self):
+        """
+        Configura el diseño del panel derecho.
+        """
         self.cllayout = QVBoxLayout()
         self.cllayout.setContentsMargins(1, 1, 1, 1)
         self.browser = QWebEngineView(self)
         self.cllayout.addWidget(self.browser)
 
-    def __FileFLNPut(self, state):
+    def create_combobox(self, label, style):
+        combo = QComboBox()
+        init_widget(combo, "styleComboBox")
+        combo.addItems(style_names(list_name=style))
+        return combo
 
-        if state == Qt.Checked:
-            self.__activeFile = 2
-        else:
-            self.__activeFile = 0
+    def create_spinbox(self, prefix, value, style, min_val=-100, max_val=100, visible=True):
+        spinbox = QDoubleSpinBox()
+        spinbox.setPrefix(prefix)
+        spinbox.setValue(value)
+        spinbox.setRange(min_val, max_val)
+        spinbox.setVisible(visible)
+        init_widget(spinbox, style)
+        return spinbox
 
-    # ========= FUNCIONES DE CALCULO ==========
+    def create_button(self, text, style, callback):
+        button = QPushButton(text)
+        init_widget(button, style)
+        button.clicked.connect(callback)
+        return button
 
-    def __PutTogetherPlanes(self, plane, alpha, radio, dimensions):
+    def add_section_label(self, text, layout):
+        label = QLabel(text)
+        label.setStyleSheet("border: 2px solid gray; position: center;")
+        layout.addWidget(label)
 
-        pos_source = np.array([float(self._xs.value()), float(self._ys.value()), float(self._zs.value())])
-        translate = int(self._translate.value())
-        xdim, ydim, zdim = dimensions
-
-        # Definimos el plano
-        if plane == 'XY':
-
-            vplane = np.array([0,0,1])
-
-            # Definir el angulo
-            angle_source = np.arctan2(pos_source[1],pos_source[0])
-            # angle_source = np.degrees(angle_source) % 360.0
-            if pos_source[2] == 0.0:
-                angle = alpha * np.pi/180 + angle_source
+    def add_widgets_to_layout(self, layout, widgets):
+        for item in widgets:
+            if isinstance(item, tuple):
+                layout.addWidget(QLabel(item[0]))
+                if isinstance(item[1], list):
+                    h_layout = QHBoxLayout()
+                    for widget in item[1]:
+                        h_layout.addWidget(widget)
+                    layout.addLayout(h_layout)
+                else:
+                    layout.addWidget(item[1])
             else:
-                angle = alpha * np.pi/180
-            # Definimos el vector normal al plano del paralepipedo
-            vnorm_x = np.cos(angle)
-            vnorm_y = np.sin(angle)
-            vnorm_z = 0
-            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
-            # vp1 = vp1/np.linalg.norm(vp1)
+                layout.addWidget(item)
 
-            # Definimos un vector perpendicular al plano y al plano del paralepipedo
-            vp2 = np.cross(vplane,vp1)
-            vp2 = vp2/np.linalg.norm(vp2)
+    # ======== Phase Space Load =========
 
-            # Definimos otro vector perpendicular
-            vp3 = np.cross(vp1,vp2)
-            vp3 = vp3/np.linalg.norm(vp3)
+    def __loadPhaseSpace(self):
 
-            # Multiplicamos los vectores para que tengan las dimensiones del detectors
-            vp1 = vp1 * zdim    # (cm)
-            vp2 = vp2 * xdim    # (cm)
-            vp3 = vp3 * ydim    # (cm)
-            vp4 = vp1 + vp2
-            vp5 = vp1 + vp3
-            vp6 = vp2 + vp3
-            vp7 = vp1 + vp2 + vp3
-            vp8 = np.array([0.0,0.0,0.0])
-
-            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
-            # Traslada los vértices al centro de coordenadas
-            vp_mean = np.mean(vp, axis=0)
-            vp = vp - vp_mean
-
-            # Corremos los detectores al valor del radio
-            vp = vp + vp1/np.linalg.norm(vp1) * radio
-
-            # Trasladamos en la dirección Z
-            vp = vp + np.array([0,0,translate])
-            # vp = vp - np.array([radio,radio,0])
-            Z = vp
-
-            # Los dos primeros --> X
-            # Los dos segundos --> Y
-            # Los dos ultimos --> Z
-
-            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
-            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
-            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
-            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
-            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
-            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
-
-            verts = [[Z[5],Z[1],Z[7],Z[2]],
-                     [Z[6],Z[3],Z[0],Z[4]],
-                     [Z[3],Z[1],Z[5],Z[6]],
-                     [Z[0],Z[7],Z[2],Z[4]],
-                     [Z[2],Z[4],Z[6],Z[5]],
-                     [Z[7],Z[0],Z[3],Z[1]]]
-
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111, projection='3d')
-            #
-            # ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
-            # ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
-            # ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
-            # ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
-            # ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
-            # ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
-            # ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
-            # ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
-            # ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
-            # ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
-            # ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
-            # ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
-            # ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
-            # ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
-            # ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
-            # ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
-            #
-            # bbox = Poly3DCollection(verts,
-            # facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
-            # bbox._facecolors2d= bbox._facecolor3d
-            # bbox._edgecolors2d = bbox._edgecolor3d
-            # ax.add_collection3d(bbox)
-            #
-            # ax.set_xlabel('Eje X [cm]')
-            # ax.set_ylabel('Eje Y [cm]')
-            # ax.set_zlabel('Eje Z [cm]')
-            #
-            # plt.show()
-
-            return Z, verts
-
-        if plane == 'XZ':
-
-            vplane = np.array([0,1,0])
-
-            # Definir el angulo
-            angle = alpha * np.pi/180
-            # Definimos el vector normal al plano del paralepipedo
-            vnorm_x = np.cos(angle)
-            vnorm_y = 0
-            vnorm_z = np.sin(angle)
-            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
-            # vp1 = vp1/np.linalg.norm(vp1)
-
-            # Definimos un vector perpendicular al plano y al plano del paralepipedo
-            vp2 = np.cross(vplane,vp1)
-            vp2 = vp2/np.linalg.norm(vp2)
-
-            # Definimos otro vector perpendicular
-            vp3 = np.cross(vp1,vp2)
-            vp3 = vp3/np.linalg.norm(vp3)
-
-            # Multiplicamos los vectores para que tengan las dimensiones del detectors
-            vp1 = vp1 * ydim    # (cm)
-            vp2 = vp2 * xdim    # (cm)
-            vp3 = vp3 * zdim    # (cm)
-            vp4 = vp1 + vp2
-            vp5 = vp1 + vp3
-            vp6 = vp2 + vp3
-            vp7 = vp1 + vp2 + vp3
-            vp8 = np.array([0.0,0.0,0.0])
-
-            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
-            # Traslada los vértices al centro de coordenadas
-            vp_mean = np.mean(vp, axis=0)
-            vp = vp - vp_mean
-
-            vp = vp + vp1/np.linalg.norm(vp1) * radio
-            # vp = vp - np.array([radio,radio,0])
-            Z = vp
-
-            # Los dos primeros --> X
-            # Los dos segundos --> Y
-            # Los dos ultimos --> Z
-
-            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
-            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
-            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
-            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
-            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
-            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
-
-            verts = [[Z[5],Z[1],Z[7],Z[2]],
-                     [Z[6],Z[3],Z[0],Z[4]],
-                     [Z[3],Z[1],Z[5],Z[6]],
-                     [Z[0],Z[7],Z[2],Z[4]],
-                     [Z[2],Z[4],Z[6],Z[5]],
-                     [Z[7],Z[0],Z[3],Z[1]]]
-
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111, projection='3d')
-            #
-            # ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
-            # ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
-            # ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
-            # ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
-            # ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
-            # ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
-            # ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
-            # ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
-            # ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
-            # ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
-            # ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
-            # ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
-            # ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
-            # ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
-            # ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
-            # ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
-            #
-            # bbox = Poly3DCollection(verts,
-            # facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
-            # bbox._facecolors2d= bbox._facecolor3d
-            # bbox._edgecolors2d = bbox._edgecolor3d
-            # ax.add_collection3d(bbox)
-            #
-            # ax.set_xlabel('Eje X [cm]')
-            # ax.set_ylabel('Eje Y [cm]')
-            # ax.set_zlabel('Eje Z [cm]')
-            #
-            # plt.show()
-
-            return Z, verts
-
-        if plane == 'YZ':
-
-            vplane = np.array([1,0,0])
-
-            # Definir el angulo
-            angle = alpha * np.pi/180
-            # Definimos el vector normal al plano del paralepipedo
-            vnorm_x = 0
-            vnorm_y = np.cos(angle)
-            vnorm_z = np.sin(angle)
-            vp1 = np.array([vnorm_x, vnorm_y, vnorm_z])
-            # vp1 = vp1/np.linalg.norm(vp1)
-
-            # Definimos un vector perpendicular al plano y al plano del paralepipedo
-            vp2 = np.cross(vplane,vp1)
-            vp2 = vp2/np.linalg.norm(vp2)
-
-            # Definimos otro vector perpendicular
-            vp3 = np.cross(vp1,vp2)
-            vp3 = vp3/np.linalg.norm(vp3)
-
-            # Multiplicamos los vectores para que tengan las dimensiones del detectors
-            vp1 = vp1 * ydim    # (cm)
-            vp2 = vp2 * xdim    # (cm)
-            vp3 = vp3 * zdim    # (cm)
-            vp4 = vp1 + vp2
-            vp5 = vp1 + vp3
-            vp6 = vp2 + vp3
-            vp7 = vp1 + vp2 + vp3
-            vp8 = np.array([0.0,0.0,0.0])
-
-            vp = np.array([vp1,vp2,vp3,vp4,vp5,vp6,vp7,vp8])
-            # Traslada los vértices al centro de coordenadas
-            vp_mean = np.mean(vp, axis=0)
-            vp = vp - vp_mean
-
-            vp = vp + vp1/np.linalg.norm(vp1) * radio
-            # vp = vp - np.array([radio,radio,0])
-            Z = vp
-
-            # Los dos primeros --> X
-            # Los dos segundos --> Y
-            # Los dos ultimos --> Z
-
-            # verts = [[Z[5],Z[1],Z[7],Z[2]], --> MIN X
-            #          [Z[0],Z[3],Z[6],Z[4]], --> MAX X
-            #          [Z[0],Z[7],Z[2],Z[4]], --> MAX Y
-            #          [Z[3],Z[1],Z[5],Z[6]], --> MIN Y
-            #          [Z[7],Z[1],Z[3],Z[0]], --> MAX Z
-            #          [Z[5],Z[6],Z[4],Z[2]], --> MIN Z
-
-            verts = [[Z[5],Z[1],Z[7],Z[2]],
-                     [Z[6],Z[3],Z[0],Z[4]],
-                     [Z[3],Z[1],Z[5],Z[6]],
-                     [Z[0],Z[7],Z[2],Z[4]],
-                     [Z[2],Z[4],Z[6],Z[5]],
-                     [Z[7],Z[0],Z[3],Z[1]]]
-
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-
-            ax.scatter3D(Z[0, 0], Z[0, 1], Z[0, 2], c='k')
-            ax.text(Z[0, 0], Z[0, 1], Z[0, 2], s='1')
-            ax.scatter3D(Z[1, 0], Z[1, 1], Z[1, 2], c='k')
-            ax.text(Z[1, 0], Z[1, 1], Z[1, 2], s='2')
-            ax.scatter3D(Z[2, 0], Z[2, 1], Z[2, 2], c='k')
-            ax.text(Z[2, 0], Z[2, 1], Z[2, 2], s='3')
-            ax.scatter3D(Z[3, 0], Z[3, 1], Z[3, 2], c='k')
-            ax.text(Z[3, 0], Z[3, 1], Z[3, 2], s='4')
-            ax.scatter3D(Z[4, 0], Z[4, 1], Z[4, 2], c='k')
-            ax.text(Z[4, 0], Z[4, 1], Z[4, 2], s='5')
-            ax.scatter3D(Z[5, 0], Z[5, 1], Z[5, 2], c='k')
-            ax.text(Z[5, 0], Z[5, 1], Z[5, 2], s='6')
-            ax.scatter3D(Z[6, 0], Z[6, 1], Z[6, 2], c='k')
-            ax.text(Z[6, 0], Z[6, 1], Z[6, 2], s='7')
-            ax.scatter3D(Z[7, 0], Z[7, 1], Z[7, 2], c='k')
-            ax.text(Z[7, 0], Z[7, 1], Z[7, 2], s='8')
-
-            bbox = Poly3DCollection(verts,
-            facecolors='red', linewidths=1, edgecolors='k', alpha=.1)
-            bbox._facecolors2d= bbox._facecolor3d
-            bbox._edgecolors2d = bbox._edgecolor3d
-            ax.add_collection3d(bbox)
-
-            ax.set_xlabel('Eje X [cm]')
-            ax.set_ylabel('Eje Y [cm]')
-            ax.set_zlabel('Eje Z [cm]')
-
-            plt.show()
-
-            return Z, verts
-
-    # ======== GENERADOR DE GEOMETRIA =========
-
-    def __converttotext(self, c):
-        if c > 0:
-            num_str = '{:.7f}'.format(c)
-            numtxt = len('0.000000000000000')
-            format = 'E+00'
-            if len(num_str) != numtxt:
-                cantidad = numtxt - len(num_str)
-                for i in range(cantidad):
-                    num_str = num_str + '0'
-            num_str = '+' + num_str + format
-            return num_str
-        elif c < 0:
-            num_str = '{:.7f}'.format(c)
-            numtxt = len('0.000000000000000')
-            format = 'E+00'
-            if len(num_str) != numtxt:
-                cantidad = numtxt - len(num_str)
-                for i in range(cantidad+1):
-                    num_str = num_str + '0'
-            num_str = num_str + format
-            return num_str
-        else:
-            num_str = '{:.7f}'.format(c)
-            numtxt = len('0.000000000000000')
-            format = 'E+00'
-            if len(num_str) != numtxt:
-                cantidad = numtxt - len(num_str)
-                for i in range(cantidad):
-                    num_str = num_str + '0'
-            num_str = '+' + num_str + format
-            return num_str
-
-    def __GetPlaneCoefficient(self,p1,p2,p3,p4):
-
-        # Encontramos dos vectores del plano.
-        v1 = p1 - p2
-        v2 = p3 - p2
-        v3 = p4 - p2
-        # Calculamos el vector normal del plano
-        normal = np.cross(v2,v3)
-        normal /= np.linalg.norm(normal)
-
-        # Calcular la distancia del plano al origen
-        d = -np.dot(normal,p1)
-
-        a = normal[0]
-        b = normal[1]
-        c = normal[2]
-
-        return a,b,c,d
-
-    def __ConstructGeometry(self):
-
-        nplanes = int(self._nplane.value())
-        plane = str(self._plane.currentText())
-        material = str(self._materials.currentText())
-        materials = np.array([[1,material]])
-
-        radio = self._radio.value()
-        dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
-
-        # # Creamos una lista que contenga el script de INPUT
-        string_list = []
-
-        # (1) Agregamos el titulo al INPUT -----------------------------------------
-
-        title = ["XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
-                 "Detector XR --> Definimos las superficies limitantes.\n",
-                 "Materiales:\n",
-        	     "  - 0 -> Vacio -> Hueco\n",
-                 "  - 1 -> {} -> Detector\n".format(materials[0,1]),
-                 "\n",
-                 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
-                 "0000000000000000000000000000000000000000000000000000000000000000\n"]
-
-        for line in title:
-            string_list.append(line)
-
-        # (2) Creamos las superficies y los bodys para los detectores---------------
-
-        if self._activeSource:
-            m=1
-        else:
-            m=0
-
-        # Definimos unidad angular de partición
-        angle = 360/nplanes
-        j=0
-
-        for n in range(m,nplanes):
-            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=n*angle, radio=radio, dimensions=dimensions)
-
-            i_detector = ["C\n",
-                          "C  **** Detector {}\n".format(n),
-                          "C\n",
-                          ]
-
-            for line in i_detector:
-                string_list.append(line)
-
-            for i,vert in enumerate(verts):
-                p1,p2,p3,p4 = vert
-                a,b,c,d = self.__GetPlaneCoefficient(p1,p2,p3,p4)
-                # print(a,b,c,d)
-                # Corregimos un error de escritura
-                if a==-0.0:
-                    a=0.0
-                if b==-0.0:
-                    b=0.0
-                if c==-0.0:
-                    c=0.0
-                if d==-0.0:
-                    d=0.0
-
-                # Agregamos el titulo de surface
-                if n+i+j < 10:
-                    string_list.append("SURFACE (   {})   Plano limitante \n".format(n+i+j))
-                if n+i+j < 100 and n+i+j >= 10:
-                    string_list.append("SURFACE (  {})   Plano limitante \n".format(n+i+j))
-                if n+i+j >= 100:
-                    string_list.append("SURFACE ( {})   Plano limitante \n".format(n+i+j))
-
-                if a == 0.0 and b != 0.0 and c != 0.0:
-                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
-                    string_list.append("     AY=({},   0)\n".format(self.__converttotext(b)))
-                    string_list.append("     AZ=({},   0)\n".format(self.__converttotext(c)))
-                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
-                elif a != 0.0 and b == 0.0 and c != 0.0:
-                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
-                    string_list.append("     AX=({},   0)\n".format(self.__converttotext(a)))
-                    string_list.append("     AZ=({},   0)\n".format(self.__converttotext(c)))
-                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
-                elif a != 0.0 and b != 0.0 and c == 0.0:
-                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
-                    string_list.append("     AX=({},   0)\n".format(self.__converttotext(a)))
-                    string_list.append("     AY=({},   0)\n".format(self.__converttotext(b)))
-                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
-                elif a == 0.0 and b == 0.0 and c != 0.0:
-                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
-                    string_list.append("     AZ=({},   0)\n".format(self.__converttotext(c)))
-                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
-                elif a != 0.0 and b == 0.0 and c == 0.0:
-                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
-                    string_list.append("     AX=({},   0)\n".format(self.__converttotext(a)))
-                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
-                elif a == 0.0 and b != 0.0 and c == 0.0:
-                    string_list.append("INDICES=( 0, 0, 0, 0, 0)\n")
-                    string_list.append("     AY=({},   0)\n".format(self.__converttotext(b)))
-                    string_list.append("     A0=({},   0)\n".format(self.__converttotext(d)))
-
-                string_list.append("0000000000000000000000000000000000000000000000000000000000000000\n")
-
-
-            if n < 10:
-                string_list.append("BODY    (   {})  Detector {} - Prism\n".format(n,n))
-            elif n>=10 and n<100:
-                string_list.append("BODY    (  {})  Detector {} - Prism\n".format(n,n))
-            elif n>=100:
-                string_list.append("BODY    ( {})  Detector {} - Prism\n".format(n,n))
-
-            string_list.append("MATERIAL(   {})\n".format(materials[0,0]))
-
-            if n+0+j < 10:
-                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+0+j))
-            elif n+0+j>=10 and n+0+j<100:
-                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+0+j))
-            elif n+0+j>=100:
-                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+0+j))
-
-            if n+1+j < 10:
-                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+1+j))
-            elif n+1+j>=10 and n+1+j<100:
-                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+1+j))
-            elif n+1+j>=100:
-                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+1+j))
-
-            if n+2+j < 10:
-                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+2+j))
-            elif n+2+j>=10 and n+2+j<100:
-                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+2+j))
-            elif n+2+j>=100:
-                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+2+j))
-
-            if n+3+j < 10:
-                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+3+j))
-            elif n+3+j>=10 and n+3+j<100:
-                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+3+j))
-            elif n+3+j>=100:
-                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+3+j))
-
-            if n+4+j < 10:
-                string_list.append("SURFACE (   {}), SIDE POINTER=(-1)\n".format(n+4+j))
-            elif n+4+j>=10 and n+4+j<100:
-                string_list.append("SURFACE (  {}), SIDE POINTER=(-1)\n".format(n+4+j))
-            elif n+4+j>=100:
-                string_list.append("SURFACE ( {}), SIDE POINTER=(-1)\n".format(n+4+j))
-
-            if n+5+j < 10:
-                string_list.append("SURFACE (   {}), SIDE POINTER=(+1)\n".format(n+5+j))
-            elif n+5+j>=10 and n+5+j<100:
-                string_list.append("SURFACE (  {}), SIDE POINTER=(+1)\n".format(n+5+j))
-            elif n+5+j>=100:
-                string_list.append("SURFACE ( {}), SIDE POINTER=(+1)\n".format(n+5+j))
-
-            string_list.append("0000000000000000000000000000000000000000000000000000000000000000\n")
-            j += 5
-
-        string_list.append("END      0000000000000000000000000000000000000000000000000000000")
-
-        self.geometryFile = string_list
-        self.__save_file_geometry(string_list)
-
-    def __save_file_geometry(self, string_list):
-
+        # Creamos la ventana emergente para que se pueda seleccionar el archivo.
         opciones = QFileDialog.Options()
         opciones |= QFileDialog.DontUseNativeDialog
-        pathfile, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "",
-                                                  "Archivos de texto (*.geo);;Todos los archivos (*)",
+        pathfile, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo de Espacio de Fase", "",
+                                                  "Archivos de entrada (*.dat);;Archivos Numpy (*.npy);;Todos los archivos (*)",
                                                   options=opciones)
-
         basename = os.path.basename(pathfile)
-        if basename.split('.')[-1] != "geo":
+        self.__basenameSuffix = basename.split('.')[-1]
+        if basename.split('.')[-1] != "dat" and basename.split('.')[-1] != "npy":
             msgBox = QMessageBox()
-            msgBox.setText("No se puede cargar este formato de archivos.")
+            msgBox.setText("No se puede cargar ese tipo de archivos.")
             msgBox.setStandardButtons(QMessageBox.Cancel)
             ret = msgBox.exec()
         else:
-            # pathfile = os.path.join('D:\\',*path.split('\\')[1:-1], 'detector_simulated.geo')
-            self.pathfile_geometry = pathfile
-            my_file = open('{}'.format(pathfile),'w')
-            new_file_contents = "".join(string_list)
-            my_file.write(new_file_contents)
-            my_file.close()
+            # Cargamos el archivo seleccionado.
+            self.pathFilePS = pathfile
+            # self.textbox_input.setText(os.path.basename(self.pathFilePS))
 
-    # ======== GENERADOR DE INPUT PENELOPE ========
-
-    def __save_file_input(self, string_list):
-
-        opciones = QFileDialog.Options()
-        opciones |= QFileDialog.DontUseNativeDialog
-        pathfile, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "",
-                                                  "Archivos de texto (*.in);;Todos los archivos (*)",
-                                                  options=opciones)
-
-        basename = os.path.basename(pathfile)
-        if basename.split('.')[-1] != "in":
-            msgBox = QMessageBox()
-            msgBox.setText("No se puede cargar este formato de archivos.")
-            msgBox.setStandardButtons(QMessageBox.Cancel)
-            ret = msgBox.exec()
-        else:
-
-            my_file = open('{}'.format(pathfile),'w')
-            new_file_contents = "".join(string_list)
-            my_file.write(new_file_contents)
-            my_file.close()
-
-    def __ConstructInput(self):
-
-        emin = self._emin.value()
-        emin = '%.1e' % emin
-
-        emax = self._emax.value()
-        emax = '%.1e' % emax
-
-        nbins = int(self._nbins.value())
-
-        nprimarios = self._nprim.value()
-        nprimarios = '%.1e' % nprimarios
-
-        ndetectors = int(self._nplane.value())+1
-
-        material = str(self._materials.currentText())
-
-
-        # # Creamos una lista que contenga el script de INPUT
-        string_list = []
-
-        # (1) Agregamos el titulo al INPUT -----------------------------------------
-        title = ['TITLE  Response of a CdTe detector.\n',
-                '       .\n',
-                '       >>>>>>>> Input phase-space file (psf).\n'
-                'IPSFN  PhaseSpace.dat          [Input psf name, up to 20 characters]\n',
-                '       .\n',
-                '       >>>>>>>> Material data and simulation parameters.\n',
-                'MFNAME .\mat\{}.mat                 [Material file, up to 20 chars]\n'.format(material),
-                'MSIMPA 1.0e3 1.0e3 1.0e3 0.1 0.1 2e3 2e3    [EABS(1:3),C1,C2,WCC,WCR]\n',
-                '       .\n',
-                '       >>>>>>>> Geometry definition file.\n',
-                'GEOMFN .\geo\detector.geo             [Geometry file, up to 20 chars]\n',
-                '       .\n']
-
-        for line in title:
-            string_list.append(line)
-
-        # Modificamos los bloques de IMPACT y ENERGY DEPOSITION
-
-        # Impact
-        string_list.append('       >>>>>>>> Impact detectors (up to 25 different detectors).\n')
-        for j in range(1,ndetectors+1):
-            string_list.append('IMPDET {} {} {} {} {}         [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins,'0',self.__activeFile))
-            string_list.append('IDBODY {}\n'.format(j))
-        string_list.append('       .\n')
-
-        # Energy detectors
-        string_list.append('       >>>>>>>> Energy deposition detectors (up to 25)\n')
-        for j in range(1,ndetectors+1):
-            string_list.append('ENDETC {} {} {}                  [E-window, no. of bins, IPSF, IDCUT]\n'.format(emin,emax,nbins))
-            string_list.append('EDBODY {}\n'.format(j))
-        string_list.append('       .\n')
-
-        # Agregamos el job
-        job = ['       >>>>>>>> Job properties\n',
-               'RESUME dump.dat                [Resume from this dump file, 20 chars]\n',
-               'DUMPTO dump.dat                   [Generate this dump file, 20 chars]\n',
-               'DUMPP  60\n',
-               '       .\n',
-               'NSIMSH {}                      [Desired number of simulated showers]\n'.format(nprimarios),
-               'TIME   2e9                         [Allotted simulation time, in sec]\n',
-               'END                                  [Ends the reading of input data]\n']
-
-        for line in job:
-            string_list.append(line)
-
-        self.inputFile = string_list
-        self.__save_file_input(string_list)
 
     # ========= TYPES GRAPH ===========
 
     def __ViewPlanes(self):
 
-        nplanes = int(self._nplane.value())+1
         plane = str(self._plane.currentText())
-        radio = self._radio.value()
+        nCols = int(self._nCols.value())
+        nRows = int(self._nRows.value())
+        nplanes = nCols * nRows
+        translate = int(self._translate.value())
+        distance = self._distance.value()
         dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
+        widthSample = self._widtSample.value()
+        heightSample = self._heightSample.value()
 
-        if self._activeSource:
-            m=1
+        anglesStr = str(self._angles.currentText())
+
+        stepAngle = self._stepAngle.value()
+        if anglesStr == 'Rotación completa':
+            angles = np.arange(0, 360, stepAngle)
+        elif anglesStr == 'Media rotación':
+            angles = np.arange(0, 180, stepAngle)
+
+        forma =  str(self._shape.currentText())
+        if forma == 'Paralelepipedo':
+            shape = 'parallelepiped'
         else:
-            m=0
-
-        angle = 360/nplanes
-        list_bodys = []
-        for n in range(m,nplanes):
-
-            Z, verts =  self.__PutTogetherPlanes(plane=plane, alpha=angle*n, radio=radio, dimensions=dimensions)
-
-            x = Z[:,0]
-            y = Z[:,1]
-            z = Z[:,2]
-            i= [7, 0, 0, 0, 4, 4, 6, 1, 4, 0, 3, 6]
-            j= [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
-            k= [0, 7, 2, 3, 6, 7, 1, 6, 5, 5, 7, 2]
+            shape = 'cylinder'
 
 
-            list_bodys.append(go.Mesh3d(x=x, y=y, z=z, alphahull = 0,
-                                        # i=i, j=j, k=k,
-                                        opacity=0.5,
-                                        color='blue'))
+        geom = GeomGenerator()
+        geom.genDetectors.set_parameters(plane = plane,
+                                         dimensions = dimensions,
+                                         distance = distance,
+                                         translate = translate,
+                                         angles = angles,
+                                         nplanes = nplanes,
+                                         widthSample=widthSample,
+                                         heightSample=heightSample,
+                                         shape=shape)
+
+        verts = geom.genDetectors.get_matrix_detectors(nCols, nRows, sample_width=widthSample, sample_height=heightSample)
+        origins, directions = geom.genDetectors.get_line_direction(verts)
+
+        list_bodies = []
+        for idx, vertices in enumerate(verts):
+            # Agregar cada cilindro como un mesh3d para visualización
+            x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
+            list_bodies.append(go.Mesh3d(
+                x=x, y=y, z=z,
+                alphahull=0,
+                color='lightblue',
+                opacity=0.5
+                # name=f'Cilindro {idx + 1}'
+            ))
+
+        if self.__basenameSuffix == 'npy':
+            dataPhaseSpace = np.load(self.pathFilePS, allow_pickle=True)[()]
+
+            # DATOS DEL SCATTERING DEL ESPACIO DE FASE
+            scattering = dataPhaseSpace['Scattering-PhaseSpace']
+            xd, yd, zd = np.array(scattering['u']), np.array(scattering['v']), np.array(scattering['w'])
+            xx, yy, zz = np.array(scattering['x']), np.array(scattering['y']), np.array(scattering['z'])
+            ee = np.array(scattering['energy'])
+
+            # Puntos del espacio de fase
+            list_bodies.append(go.Scatter3d(
+                x=xx[::500], y=yy[::500], z=zz[::500],
+                mode='markers', marker=dict(size=3, color='orange'), name='PhaseSpace'
+            ))
 
         # Datos para el eje x
-        list_bodys.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
+        list_bodies.append(go.Scatter3d(x=[0, 6], y=[0, 0], z=[0, 0], mode='lines', name='X Axis', line=dict(color='red', width=5)))
 
         # Datos para el eje y
-        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
+        list_bodies.append(go.Scatter3d(x=[0, 0], y=[0, 6], z=[0, 0], mode='lines', name='Y Axis', line=dict(color='green', width=5)))
 
         # Datos para el eje z
-        list_bodys.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
+        list_bodies.append(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 6], mode='lines', name='Z Axis', line=dict(color='blue', width=5)))
+
+
+        # layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
+        # layout = go.Layout(scene_xaxis_visible=True, scene_yaxis_visible=True, scene_zaxis_visible=True,
+        #                   scene = dict(xaxis=dict(range=[-10,10]),
+        #                                yaxis=dict(range=[-10,10]),
+        #                                zaxis=dict(range=[-10,10])))
+
+        # df = px.data.tips()
+        # fig = px.box(df, x="day", y="total_bill", color="smoker")
+        # fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
+        #
 
 
         layout = go.Layout(scene_xaxis_visible=False, scene_yaxis_visible=False, scene_zaxis_visible=False)
@@ -4745,7 +4107,19 @@ class Plot3DView(QWidget):
         # fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
         #
 
-        fig = go.Figure(data = list_bodys, layout = layout)
+        fig = go.Figure(data = list_bodies, layout = layout)
+
+        # Configuración del gráfico
+        fig.update_layout(
+            scene=dict(
+                xaxis_title='X',
+                yaxis_title='Y',
+                zaxis_title='Z',
+                aspectmode='data'
+            ),
+            title='Sistema de Colimadores en 3D'
+        )
+
         # fig.update_layout(scene_camera_eye_z= 0.55)
         fig.layout.scene.camera.projection.type = "orthographic" #commenting this line you get a fig with perspective proj
         self.browser.setHtml(fig.to_html(include_plotlyjs='cdn'))
