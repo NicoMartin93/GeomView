@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import numpy as np
+import time
 import shutil
 import subprocess
 import plotly.graph_objects as go
@@ -27,7 +28,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.image as mpimg
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -413,102 +415,349 @@ class plotsTools(QWidget):
             # body = int(body)
             self.detectors_groups.append([self.database['spc-enddet'][body], self.database['spc-enddet'][body+num_bodys/2]])
 
-class SimulateRayTracing(DetSystemGen):
+class SimulateRayTracing(QWidget):
 
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__()
+        self.parent = parent
+        self.setup_layout()
 
-        self.__Layaout_Principal()
+    def setup_layout(self):
+        """
+        Configura el diseño principal de la ventana.
+        """
+        # Configuración del panel izquierdo
+        self.setup_left_panel()
 
-        layout_Simulate = QHBoxLayout()
-        layout_Simulate.addLayout(self.llayout, 30)
-        layout_Simulate.addLayout(self.rlayout, 70)
-        self.setLayout(layout_Simulate)
+        # Configuración del panel derecho
+        self.setup_right_panel()
 
-    def __Layaout_Principal(self):
+        # Layout principal
+        main_layout = QHBoxLayout()
+        main_layout.addLayout(self.llayout, 30)
+        main_layout.addLayout(self.cllayout, 70)
+        self.setLayout(main_layout)
 
-        # --------------------------------------------------
-        # (1) LLAYOUT
+    def setup_left_panel(self):
+        """
+        Configura los widgets y diseño del panel izquierdo.
+        """
 
-        # Boton para cargar input
-        self.button_input = QPushButton("Load Input")
-        init_widget(self.button_input, "load_input")
-        self.textbox_input = QLineEdit()
+        # Widgets para configuración visual
+        # Botones
 
-        # Boton para cargar geometria
-        self.button_geom = QPushButton("Load Geometry")
-        init_widget(self.button_geom, "load_geometry")
-        self.textbox_geom = QLineEdit()
-
-        # Boton para cargar ejecutable
-        self.button_exe = QPushButton("Load Exe")
-        init_widget(self.button_exe, "load_exe")
-        self.textbox_exe = QLineEdit()
-
-        # Conexiones con los botones
-        self.button_input.clicked.connect(self.loadFileInput)
-        self.button_geom.clicked.connect(self.loadFileGeo)
-        self.button_exe.clicked.connect(self.loadFileExe)
-
-        # ---- llayout
+        # Diseño del panel izquierdo
         self.llayout = QVBoxLayout()
         self.llayout.setContentsMargins(1, 1, 1, 1)
 
-        self.label1 = QLabel("CARGAR ARCHIVOS PARA SIMULACIÓN")
-        self.label1.setStyleSheet("border: 2px solid gray; position: center;")
-        self.llayout.addWidget(self.label1)
+        # Geometría y archivo input
+        self.add_section_label("ARCHIVO DE GEOMETRIA", self.llayout)
+        self.button_geometry = self.create_button("Cargar geometría de detectores", "view_label", self.setData)
+        self.llayout.addWidget(self.button_geometry)
+        self.add_section_label("ARCHIVO DE ESPACIO DE FASE", self.llayout)
+        self.button_phaseSpace = self.create_button("Cargar espacio de fase", "view_label", self.__loadPhaseSpace)
+        self.llayout.addWidget(self.button_phaseSpace)
 
-        self.llayout.addWidget(QLabel("Archivo Input:"))
-        self.horizontalLayou1 = QHBoxLayout()
-        self.horizontalLayou1.addWidget(self.button_input)
-        self.horizontalLayou1.addWidget(self.textbox_input)
-        self.llayout.addLayout(self.horizontalLayou1)
+        self.button_start = self.create_button("INICIAR", "view_label", self.startSimulation)
+        self.add_section_label("SIMULACION", self.llayout)
+        self.llayout.addWidget(self.button_start)
 
-        self.llayout.addWidget(QLabel("Archivo Geometría:"))
-        self.horizontalLayou2 = QHBoxLayout()
-        self.horizontalLayou2.addWidget(self.button_geom)
-        self.horizontalLayou2.addWidget(self.textbox_geom)
-        self.llayout.addLayout(self.horizontalLayou2)
-
-        self.llayout.addWidget(QLabel("Archivo Ejecutable:"))
-        self.horizontalLayou3 = QHBoxLayout()
-        self.horizontalLayou3.addWidget(self.button_exe)
-        self.horizontalLayou3.addWidget(self.textbox_exe)
-        self.llayout.addLayout(self.horizontalLayou3)
+        self.add_section_label("Visualizar", self.llayout)
+        self.nF = self.create_spinbox("Fila: ", 1, "xdim", 0, 100)
+        self.llayout.addWidget(self.nF)
+        self.button_viewResult = self.create_button("VER", "view_label", self.viewDistribution)
+        self.llayout.addWidget(self.button_viewResult)
 
         self.llayout.addStretch()
-        # ----
 
-        # Creamos un QTextEdit y lo hacemos editable
-        self.text_edit = QTextEdit(self)
-        self.text_edit.setReadOnly(True)
+    def setup_right_panel(self):
+        """
+        Configura el diseño del panel derecho.
+        """
+        self.cllayout = QVBoxLayout()
+        self.cllayout.setContentsMargins(1, 1, 1, 1)
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.cllayout.addWidget(self.canvas)
 
-        # Creamos un botón para ejecutar el comando
-        self.btn_run = QPushButton('Ejecutar Simulación', self)
-        self.btn_run.clicked.connect(self.start_simulation)
+    def create_combobox(self, label, style):
+        combo = QComboBox()
+        init_widget(combo, "styleComboBox")
+        combo.addItems(style_names(list_name=style))
+        return combo
 
-        # Creamos un layout vertical y añadimos los widgets
-        self.rlayout = QVBoxLayout()
-        self.rlayout.setContentsMargins(1, 1, 1, 1)
+    def create_spinbox(self, prefix, value, style, min_val=-100, max_val=100, visible=True):
+        spinbox = QDoubleSpinBox()
+        spinbox.setPrefix(prefix)
+        spinbox.setValue(value)
+        spinbox.setRange(min_val, max_val)
+        spinbox.setVisible(visible)
+        init_widget(spinbox, style)
+        return spinbox
 
-        self.rlayout.addWidget(self.text_edit)
-        self.rlayout.addWidget(self.btn_run)
-        # self.setLayout(rlayout)
+    def create_button(self, text, style, callback):
+        button = QPushButton(text)
+        init_widget(button, style)
+        button.clicked.connect(callback)
+        return button
+
+    def add_section_label(self, text, layout):
+        label = QLabel(text)
+        label.setStyleSheet("border: 2px solid gray; position: center;")
+        layout.addWidget(label)
+
+    def add_widgets_to_layout(self, layout, widgets):
+        for item in widgets:
+            if isinstance(item, tuple):
+                layout.addWidget(QLabel(item[0]))
+                if isinstance(item[1], list):
+                    h_layout = QHBoxLayout()
+                    for widget in item[1]:
+                        h_layout.addWidget(widget)
+                    layout.addLayout(h_layout)
+                else:
+                    layout.addWidget(item[1])
+            else:
+                layout.addWidget(item)
 
     def startSimulation(self):
+
+        # DATOS DE LA GEOMETRIA DE LOS DETECTORES
+        vertices, origins, directions, nCols, nRows = self.setData()
+        vertices = np.array(vertices)
+        directions = np.array(directions)
+        numDetectors = len(vertices)
+
 
         Main.include(".\GeomView\geometry.jl")
         Geometry = Main.Geometry
 
-        # Llamar a la función expand_rectangle
-        expanded_vertices = Geometry.expand_rectangle(center, vertices.T, normal_vector, prolongacion, theta)
-        print("Expanded Vertices:", expanded_vertices)
+        # DATOS DEL SCATTERING DEL ESPACIO DE FASE
+        dataPhaseSpace = np.load(self.pathFilePS, allow_pickle=True)[()]
+        pathFilePS = 'D:\Proyectos_Investigacion\Proyectos_de_Doctorado\Proyectos\SimulationXF_Detectors\Code\Estudios\ModelosBasicos\Phantom_Cilindro_1\Resultados\Mat_Au\Det9-Dist6-Length4\dataPhaseSpace.npy'
+        dataPhaseSpace = np.load(pathFilePS, allow_pickle=True)[()]
+        scattering = dataPhaseSpace['Scattering-PhaseSpace']
+        points = np.array([scattering['x'], scattering['y'], scattering['z']]).T
+        dirPoints = np.array([scattering['u'], scattering['v'], scattering['w']]).T
+        ee = np.array(scattering['energy'])
+
+        self.numDetectors = len(vertices)
+        self.points = points
+        self.dirPoints = dirPoints
+        self.ee = ee
+        self.filterAngle = False
+        alpha = 1
+        theta = 3
+        prolongacion = 6
+
+        self.alpha = alpha
+        self.theta = theta
+        self.prolongacion = prolongacion
+        self.nCols = nCols
+        self.nRows = nRows
+
+        countersDetectors = {}
+
+        start_time = time.time()
+        self.__printProgressBar(0, numDetectors - 1, prefix='Detecting impact', suffix='Completo', decimals=1, length=30, start_time=start_time)
+
+        # (2) ==========================================================
+        # EXTRAEMOS DE CADA DETECTOR SUS DATOS.
+        for det in range(numDetectors):
+            verts = vertices[det]
+            direction = directions[det] #if self.shape == 'Line' else -self.boundsDetectors.detectors_directions[det]
+            direction = np.concatenate((direction, np.array([[0], [0]])), axis=1)
+
+            # PUNTO CENTRAL DEL DETECTOR
+            vertices_to_expand = np.array([verts[7], verts[2], verts[4], verts[0]])
+            center = np.mean(vertices_to_expand, axis=0)
+
+            # Centro del paralelepípedo y vector normal
+            center_x, center_y, center_z = np.mean(verts, axis=0)
+            normal_vector = direction[0] / np.linalg.norm(direction[0])
+            normal_line_end = np.array([center_x, center_y, center_z]) + prolongacion * normal_vector  # Línea normal extendida
+
+            # Expande el rectángulo a partir de los cuatro vértices
+            expanded_vertices = Geometry.expand_rectangle(center, vertices_to_expand, normal_vector, prolongacion, theta)
+
+            expanded_vertices_Paralelepide = np.array([verts[7], verts[2], verts[4], verts[0],
+                                                       expanded_vertices[0], expanded_vertices[1],
+                                                       expanded_vertices[2], expanded_vertices[3]])
+
+            points_parallelepiped_boolean = Geometry.points_inside_parallelepiped(points, expanded_vertices_Paralelepide)
+            points_parallelepiped = points[points_parallelepiped_boolean]
+            dirPoints_parallelepiped = dirPoints[points_parallelepiped_boolean]
+            ee_parallelepiped = ee[points_parallelepiped_boolean]
+
+            if self.filterAngle:
+                # Ángulo entre la dirección de los puntos y el detector
+                # Vectores de dispersión en el espacio de fase
+                unit_vectors = dirPoints_parallelepiped / np.linalg.norm(dirPoints_parallelepiped, axis=1, keepdims=True)
+                dot_products = np.dot(normal_vector, unit_vectors.T)
+                angles = np.arccos(np.clip(dot_products, -1.0, 1.0))
+
+                # Umbral para seleccionar direcciones cercanas a 180 grados (hacia el detector)
+                delta = self.alpha * np.pi / 180  # 1 grado en radianes
+                mask = (angles >= (np.pi - delta)) & (angles <= np.pi)
+
+                # Filtra solo los puntos que cumplen con la condición angular
+                xt, yt, zt = points_parallelepiped.T
+                xdt, ydt, zdt = dirPoints_parallelepiped.T
+
+                pos = np.column_stack((xt[mask], yt[mask], zt[mask]))
+                dir = np.column_stack((xdt[mask], ydt[mask], zdt[mask]))
+                ene = ee_parallelepiped[mask]
+
+                # Normalizar todas las direcciones a la vez
+                dir_norms = np.linalg.norm(dir, axis=1, keepdims=True)
+                dir = dir / dir_norms  # Normalización vectorial
+
+                # Calcular las intersecciones con el plano del detector
+                intersections = line_plane_intersection_vectorized(pos, dir, center, normal_vector)
+
+                # Filtrar intersecciones válidas que caigan dentro del área del detector
+                valid_intersections = (intersections is not None) & point_in_rectangle_vectorized(intersections, vertices_to_expand)
+
+                # Crear la matriz de booleanos
+                intersection_matrix = valid_intersections.astype(bool)
+                countersDetectors[det] = ene[intersection_matrix]
+
+            else:
+
+                # Normalizar todas las direcciones a la vez
+                dir_norms = np.linalg.norm(dirPoints_parallelepiped, axis=1, keepdims=True)
+                dirPoints_parallelepiped = dirPoints_parallelepiped / dir_norms  # Normalización vectorial
+
+                # Calcular las intersecciones con el plano del detector
+                intersections = Geometry.line_plane_intersection_vectorized(points_parallelepiped, dirPoints_parallelepiped, center, normal_vector)
+
+                # Filtrar intersecciones válidas que caigan dentro del área del detector
+                valid_intersections = (intersections is not None) & Geometry.point_in_rectangle_vectorized(intersections, vertices_to_expand)
+
+                # Crear la matriz de booleanos
+                intersection_matrix = valid_intersections.astype(bool)[:,0]
+
+                # print(f"ee_parallelepiped shape: {ee_parallelepiped.shape}")
+                # print(f"intersection_matrix shape: {intersection_matrix.shape}")
+
+                countersDetectors[det] = ee_parallelepiped[intersection_matrix]
+
+            if det % 5 == 0 or det == numDetectors - 1:
+                self.__printProgressBar(det, numDetectors - 1, prefix='Detecting impact', suffix='Completo', decimals=1, length=30, start_time=start_time)
+
+        self.spectrumDetectors = countersDetectors
+        organized_by_rows_and_angles = self.organizeDetectorsByRowsAndAngles()
+        self.organized_by_rows_and_angles = organized_by_rows_and_angles
+        # return countersDetectors
+
+    def organizeDetectorsByRowsAndAngles(self):
+        """
+        Reorganiza los detectores de un diccionario donde las claves son índices únicos.
+        Agrupa los detectores por filas y dentro de cada fila por ángulo.
+
+        Parámetros:
+        - detectors (dict): Diccionario de detectores donde las claves son índices únicos.
+        - rows (int): Número de filas en la matriz de detectores por ángulo.
+        - cols (int): Número de columnas en la matriz de detectores por ángulo.
+
+        Retorno:
+        - organized_by_rows_and_angles (list): Lista donde cada elemento representa una fila. Dentro de cada fila,
+                                               los detectores están separados por ángulo.
+        """
+        # Convertir las claves del diccionario en una lista ordenada
+        rows = self.nRows
+        cols = self.nCols
+        sorted_keys = sorted(self.spectrumDetectors.keys())
+        total_detectors = len(sorted_keys)
+        detectors_per_angle = rows * cols
+        total_angles = total_detectors // detectors_per_angle
+        self.total_angles = total_angles
+        # Crear la estructura para filas y ángulos
+        organized_by_rows_and_angles = [[[] for _ in range(total_angles)] for _ in range(rows)]
+
+        # Iterar sobre los ángulos
+        for angle_idx in range(total_angles):
+            start_idx = angle_idx * detectors_per_angle
+
+            # Iterar sobre las filas
+            for row in range(rows):
+                row_start = start_idx + row * cols
+                row_end = row_start + cols
+                organized_by_rows_and_angles[row][angle_idx] = [
+                    self.spectrumDetectors[key] for key in sorted_keys[row_start:row_end]
+                ]
+
+        # self.organized_by_rows_and_angles = organized_by_rows_and_angles
+        return organized_by_rows_and_angles
+
+    def setData(self):
+        data = self.parent.getDataDetectors()
+        return data
+
+    def __loadPhaseSpace(self):
+
+        # Creamos la ventana emergente para que se pueda seleccionar el archivo.
+        opciones = QFileDialog.Options()
+        opciones |= QFileDialog.DontUseNativeDialog
+        pathfile, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo de Espacio de Fase", "",
+                                                  "Archivos de entrada (*.dat);;Archivos Numpy (*.npy);;Todos los archivos (*)",
+                                                  options=opciones)
+        basename = os.path.basename(pathfile)
+        self.__basenameSuffix = basename.split('.')[-1]
+        if basename.split('.')[-1] != "dat" and basename.split('.')[-1] != "npy":
+            msgBox = QMessageBox()
+            msgBox.setText("No se puede cargar ese tipo de archivos.")
+            msgBox.setStandardButtons(QMessageBox.Cancel)
+            ret = msgBox.exec()
+        else:
+            # Cargamos el archivo seleccionado.
+            self.pathFilePS = pathfile
+            # self.textbox_input.setText(os.path.basename(self.pathFilePS))
+
+    def __printProgressBar(self, iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', start_time=None):
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + ' ' * (length - filledLength)
+
+        # Calcular tiempo restante
+        if start_time is not None and iteration > 0:
+            elapsed_time = time.time() - start_time
+            estimated_total_time = elapsed_time / iteration * total
+            remaining_time = estimated_total_time - elapsed_time
+            time_format = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
+            time_display = f" - ETA: {time_format}"
+        else:
+            time_display = ""
+
+        print(f'\r{prefix} |{bar}| {percent}% {suffix}{time_display}', end='\r')
+        if iteration == total:
+            print()
+
+    def viewDistribution(self):
+
+        counts = self.organized_by_rows_and_angles[int(self.nF), int(self.total_angles)]
+
+        ax = self.figure.add_subplot(111)
+
+        # Dibujar la gráfica
+        ax.plot(counts, marker='o', linestyle='-', color='b')
+        ax.set_title("Distribución de cuentas")
+        ax.set_xlabel("Índice de posición")
+        ax.set_ylabel("Cuentas detectadas")
+        # ax.legend()
+        ax.grid(True)
+
+        # Actualizar el lienzo
+        self.canvas.draw()
+
+
+
 
 
 class DetSystemGen(QWidget):
-    def __init__(self, data=None):
+    def __init__(self):
         super().__init__()
-        self.data = data
+
         self.__basenameSuffix = ''
         # Configuramos la pantalla principal
         self.setup_layout()
@@ -576,8 +825,7 @@ class DetSystemGen(QWidget):
         self.add_section_label("CONFIGURACIÓN VISUAL DE ANILLOS DETECTORES", self.llayout)
         self.add_widgets_to_layout(self.llayout, [
             ("Plano:", self._plane),
-            ("Detectores por fila: ", self._nCols),
-            ("Detectores por columna: ", self._nRows),
+            ("Detectores por fila y columna: ", [self._nCols, self._nRows]),
             ("Material: ", self._materials),
             ("Distancia de la muestra: ", self._distance),
             ("Rotación: ", self._angles),
@@ -588,6 +836,7 @@ class DetSystemGen(QWidget):
             ("Trasladar detectores: ", self._translate),
             ("Visualizar geometría", self.button_view),
         ])
+
 
     def setup_right_panel(self):
         """
@@ -660,6 +909,62 @@ class DetSystemGen(QWidget):
             self.pathFilePS = pathfile
             # self.textbox_input.setText(os.path.basename(self.pathFilePS))
 
+    # ======== Get Data ========
+
+    def getDataDetectors(self):
+
+        plane = str(self._plane.currentText())
+        nCols = int(self._nCols.value())
+        nRows = int(self._nRows.value())
+        nplanes = nCols * nRows
+        translate = int(self._translate.value())
+        distance = self._distance.value()
+        dimensions = np.array([self._xdim.value(),self._ydim.value(),self._zdim.value()])
+        widthSample = self._widtSample.value()
+        heightSample = self._heightSample.value()
+        anglesStr = str(self._angles.currentText())
+
+        stepAngle = self._stepAngle.value()
+        if anglesStr == 'Rotación completa':
+            angles = np.arange(0, 360, stepAngle)
+        elif anglesStr == 'Media rotación':
+            angles = np.arange(0, 180, stepAngle)
+
+        forma =  str(self._shape.currentText())
+        if forma == 'Paralelepipedo':
+            shape = 'parallelepiped'
+        else:
+            shape = 'cylinder'
+
+        # plane='XY'
+        # dimensions = np.array([0.1,0.5,0.5])
+        # distance = 6
+        # translate = 0
+        # angles =  np.arange(0, 360, 2)
+        # nplanes = 3*9
+        # widthSample=0.5
+        # heightSample = 4
+        # shape = 'parallelepiped'
+        # nCols=3
+        # nRows=9
+
+        geom = GeomGenerator()
+        geom.genDetectors.set_parameters(plane = plane,
+                                         dimensions = dimensions,
+                                         distance = distance,
+                                         translate = translate,
+                                         angles = angles,
+                                         nplanes = nplanes,
+                                         widthSample=widthSample,
+                                         heightSample=heightSample,
+                                         shape=shape)
+
+        verts = geom.genDetectors.get_matrix_detectors(nCols, nRows, sample_width=widthSample, sample_height=heightSample)
+        origins, directions = geom.genDetectors.get_line_direction(verts)
+
+        data = [verts, origins, directions, nCols, nRows]
+
+        return data
 
     # ========= TYPES GRAPH ===========
 
@@ -835,8 +1140,14 @@ class VentanaPrincipal(QMainWindow):
 
     def __simulatedRayTracing(self):
         if self.simulation_widget is None:
-            self.simulation_widget = SimulateRayTracing()
-            self.central_widget.addWidget(self.simulation_widget)
+
+            if self.geometry_widget is None:
+                self.simulation_widget = SimulateRayTracing(parent=None)
+                self.central_widget.addWidget(self.simulation_widget)
+            else:
+                self.simulation_widget = SimulateRayTracing(parent=self.geometry_widget)
+                self.central_widget.addWidget(self.simulation_widget)
+
         self.central_widget.setCurrentWidget(self.simulation_widget)
 
     def __plotsTools(self):
